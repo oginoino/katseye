@@ -1,2 +1,4 @@
 .DS_Store
 .env.exemple
+docker/mongo/init-user.js
+.env.docker
