@@ -33,7 +33,7 @@ const (
 	ginModeEnvKey      = "GIN_MODE"
 	jwtSecretEnvKey    = "JWT_SECRET"
 	productionEnvFile  = ".env"
-	developmentEnvFile = ".env.exemple"
+	developmentEnvFile = ".env.example"
 )
 
 type Config struct {
