@@ -17,7 +17,7 @@ func buildHandlers(services ServiceSet, authCfg AuthConfig) HandlerSet {
 	handlerSet := HandlerSet{}
 
 	if services.Product != nil {
-		handlerSet.Product = handlers.NewProductHandler(services.Product)
+		handlerSet.Product = handlers.NewProductHandler(services.Product, services.ProductTemplates)
 	}
 
 	if services.Partner != nil {

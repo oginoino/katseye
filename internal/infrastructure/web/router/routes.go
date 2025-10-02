@@ -34,6 +34,8 @@ func registerProductRoutes(r gin.IRouter, handler *handlers.ProductHandler) {
 	products := r.Group("/products")
 	products.Use(webmiddleware.RequireProfileTypes(partnerAccessibleProfiles...))
 	products.GET("", handler.ListProducts)
+	products.GET("/templates", handler.ListProductTemplates)
+	products.GET("/templates/:type", handler.GetProductTemplate)
 	products.POST("", handler.CreateProduct)
 	products.GET("/:id", handler.GetProduct)
 	products.PUT("/:id", handler.UpdateProduct)
