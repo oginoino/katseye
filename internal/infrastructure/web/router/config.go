@@ -18,4 +18,5 @@ func ConfigureRoutes(r gin.IRouter, h Handlers) {
 	registerProductRoutes(r, h.Product)
 	registerPartnerRoutes(r, h.Partner)
 	registerAddressRoutes(r, h.Address)
+	registerConsumerRoutes(r, h.Consumer)
 }
