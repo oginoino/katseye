@@ -20,11 +20,21 @@ const (
 	PermissionManageUsers = "users:manage"
 )
 
+// UserProfileType represents the type of profile associated with given credentials.
+type UserProfileType string
+
+const (
+	ProfileTypeServiceAccount UserProfileType = "service_account"
+	ProfileTypePartnerManager UserProfileType = "partner_manager"
+	ProfileTypeConsumer       UserProfileType = "consumer"
+)
+
 // ErrInvalidPassword indicates the provided password does not match the stored hash.
 var (
-	ErrInvalidPassword = errors.New("invalid password")
-	ErrEmptyPassword   = errors.New("password must not be empty")
-	ErrInvalidRole     = errors.New("invalid role")
+	ErrInvalidPassword    = errors.New("invalid password")
+	ErrEmptyPassword      = errors.New("password must not be empty")
+	ErrInvalidRole        = errors.New("invalid role")
+	ErrInvalidProfileType = errors.New("invalid profile type")
 )
 
 // User represents an authenticated account within the system.
@@ -35,6 +45,8 @@ type User struct {
 	Active       bool
 	Role         Role
 	Permissions  []string
+	ProfileType  UserProfileType
+	ProfileID    primitive.ObjectID
 }
 
 // Normalize prepares user fields for persistence/lookup.
@@ -57,6 +69,19 @@ func (u *User) Normalize() {
 		perms = normalizePermissions(append(perms, PermissionManageUsers))
 	}
 	u.Permissions = perms
+
+	profileType := UserProfileType(strings.TrimSpace(strings.ToLower(u.ProfileType.String())))
+	if profileType == "" {
+		profileType = ProfileTypeServiceAccount
+	}
+	if !IsValidProfileType(profileType) {
+		profileType = ProfileTypeServiceAccount
+	}
+	u.ProfileType = profileType
+
+	if u.ProfileType == ProfileTypeServiceAccount {
+		u.ProfileID = primitive.NilObjectID
+	}
 }
 
 // CheckPassword compares a clear-text password with the stored bcrypt hash.
@@ -148,6 +173,33 @@ func ParseRole(role string) (Role, error) {
 	}
 	if !IsValidRole(candidate) {
 		return "", ErrInvalidRole
+	}
+	return candidate, nil
+}
+
+// String returns the profile type as string.
+func (t UserProfileType) String() string {
+	return string(t)
+}
+
+// IsValidProfileType returns true when the provided profile type is recognised.
+func IsValidProfileType(profileType UserProfileType) bool {
+	switch UserProfileType(strings.TrimSpace(strings.ToLower(profileType.String()))) {
+	case ProfileTypeServiceAccount, ProfileTypePartnerManager, ProfileTypeConsumer:
+		return true
+	default:
+		return false
+	}
+}
+
+// ParseProfileType normalizes and validates the profile type string.
+func ParseProfileType(profileType string) (UserProfileType, error) {
+	candidate := UserProfileType(strings.TrimSpace(strings.ToLower(profileType)))
+	if candidate == "" {
+		return ProfileTypeServiceAccount, nil
+	}
+	if !IsValidProfileType(candidate) {
+		return "", ErrInvalidProfileType
 	}
 	return candidate, nil
 }

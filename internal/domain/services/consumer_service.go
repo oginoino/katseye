@@ -16,6 +16,8 @@ var (
 	ErrConsumerNotFound              = errors.New("consumer not found")
 	ErrProductRepositoryUnavailable  = errors.New("product repository unavailable")
 	ErrProductNotFound               = errors.New("product not found")
+	ErrConsumerUserAlreadyLinked     = errors.New("consumer already linked to user")
+	ErrConsumerUserNotLinked         = errors.New("consumer user not linked")
 )
 
 type ConsumerService struct {
@@ -173,6 +175,61 @@ func (s *ConsumerService) RemoveContractedProduct(ctx context.Context, consumerI
 		return err
 	}
 
+	consumer.UpdatedAt = time.Now().UTC()
+
+	return s.consumerRepo.UpdateConsumer(ctx, consumer)
+}
+
+func (s *ConsumerService) AttachUserProfile(ctx context.Context, consumerID, userID primitive.ObjectID) error {
+	if s == nil || s.consumerRepo == nil {
+		return ErrConsumerRepositoryUnavailable
+	}
+	if consumerID.IsZero() {
+		return errors.New("consumer id is required")
+	}
+	if userID.IsZero() {
+		return errors.New("user id is required")
+	}
+
+	consumer, err := s.consumerRepo.GetConsumerByID(ctx, consumerID)
+	if err != nil {
+		return err
+	}
+	if consumer == nil {
+		return ErrConsumerNotFound
+	}
+
+	if consumer.HasLinkedUser() {
+		return ErrConsumerUserAlreadyLinked
+	}
+
+	consumer.UserID = userID
+	consumer.UpdatedAt = time.Now().UTC()
+
+	return s.consumerRepo.UpdateConsumer(ctx, consumer)
+}
+
+func (s *ConsumerService) DetachUserProfile(ctx context.Context, consumerID primitive.ObjectID) error {
+	if s == nil || s.consumerRepo == nil {
+		return ErrConsumerRepositoryUnavailable
+	}
+	if consumerID.IsZero() {
+		return errors.New("consumer id is required")
+	}
+
+	consumer, err := s.consumerRepo.GetConsumerByID(ctx, consumerID)
+	if err != nil {
+		return err
+	}
+	if consumer == nil {
+		return ErrConsumerNotFound
+	}
+
+	if !consumer.HasLinkedUser() {
+		return ErrConsumerUserNotLinked
+	}
+
+	consumer.UserID = primitive.NilObjectID
 	consumer.UpdatedAt = time.Now().UTC()
 
 	return s.consumerRepo.UpdateConsumer(ctx, consumer)

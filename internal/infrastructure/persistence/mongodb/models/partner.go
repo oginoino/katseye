@@ -9,11 +9,12 @@ import (
 
 // PartnerDocument descreve a estrutura do documento de parceiro no MongoDB.
 type PartnerDocument struct {
-	ID            primitive.ObjectID         `bson:"_id,omitempty"`
-	Name          string                     `bson:"partner_name"`
-	Type          string                     `bson:"partner_type"`
-	Attributes    entities.PartnerAttributes `bson:"partner_attributes"`
-	AcceptedTypes []string                   `bson:"accepted_types"`
+	ID                primitive.ObjectID         `bson:"_id,omitempty"`
+	Name              string                     `bson:"partner_name"`
+	Type              string                     `bson:"partner_type"`
+	Attributes        entities.PartnerAttributes `bson:"partner_attributes"`
+	AcceptedTypes     []string                   `bson:"accepted_types"`
+	ManagerProfileIDs []primitive.ObjectID       `bson:"manager_profile_ids,omitempty"`
 }
 
 // ToEntity converte o documento em uma entidade de domínio.
@@ -31,11 +32,12 @@ func (doc PartnerDocument) ToEntity() *entities.Partner {
 	}
 
 	return &entities.Partner{
-		ID:            doc.ID,
-		Name:          doc.Name,
-		Type:          partnerType,
-		Attributes:    doc.Attributes,
-		AcceptedTypes: accepted,
+		ID:                doc.ID,
+		Name:              doc.Name,
+		Type:              partnerType,
+		Attributes:        doc.Attributes,
+		ManagerProfileIDs: append([]primitive.ObjectID(nil), doc.ManagerProfileIDs...),
+		AcceptedTypes:     accepted,
 	}
 }
 
@@ -51,10 +53,11 @@ func NewPartnerDocument(partner *entities.Partner) PartnerDocument {
 	}
 
 	return PartnerDocument{
-		ID:            partner.ID,
-		Name:          partner.Name,
-		Type:          partner.Type.String(),
-		Attributes:    partner.Attributes,
-		AcceptedTypes: accepted,
+		ID:                partner.ID,
+		Name:              partner.Name,
+		Type:              partner.Type.String(),
+		Attributes:        partner.Attributes,
+		ManagerProfileIDs: append([]primitive.ObjectID(nil), partner.ManagerProfileIDs...),
+		AcceptedTypes:     accepted,
 	}
 }

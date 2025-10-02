@@ -18,6 +18,7 @@ type ConsumerDocument struct {
 	PrimaryAddressID     primitive.ObjectID            `bson:"primary_address_id"`
 	AdditionalAddressIDs []primitive.ObjectID          `bson:"additional_address_ids,omitempty"`
 	ContractedProducts   []primitive.ObjectID          `bson:"contracted_products,omitempty"`
+	UserID               primitive.ObjectID            `bson:"user_id,omitempty"`
 	CreatedAt            time.Time                     `bson:"created_at"`
 	UpdatedAt            time.Time                     `bson:"updated_at"`
 }
@@ -82,6 +83,7 @@ func NewConsumerDocument(consumer *entities.Consumer) ConsumerDocument {
 		PrimaryAddressID:     consumer.PrimaryAddressID,
 		AdditionalAddressIDs: append([]primitive.ObjectID(nil), consumer.AdditionalAddressIDs...),
 		ContractedProducts:   append([]primitive.ObjectID(nil), consumer.ContractedProducts...),
+		UserID:               consumer.UserID,
 		CreatedAt:            consumer.CreatedAt,
 		UpdatedAt:            consumer.UpdatedAt,
 	}
@@ -99,6 +101,7 @@ func (doc ConsumerDocument) ToEntity() *entities.Consumer {
 		PrimaryAddressID:     doc.PrimaryAddressID,
 		AdditionalAddressIDs: append([]primitive.ObjectID(nil), doc.AdditionalAddressIDs...),
 		ContractedProducts:   append([]primitive.ObjectID(nil), doc.ContractedProducts...),
+		UserID:               doc.UserID,
 		CreatedAt:            doc.CreatedAt,
 		UpdatedAt:            doc.UpdatedAt,
 	}

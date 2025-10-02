@@ -33,7 +33,7 @@ func buildHandlers(services ServiceSet, authCfg AuthConfig) HandlerSet {
 	}
 
 	if services.Auth != nil {
-		handlerSet.Auth = handlers.NewAuthHandler(services.Auth, services.Token, authCfg.JWTSecret)
+		handlerSet.Auth = handlers.NewAuthHandler(services.Auth, services.Token, services.Partner, services.Consumer, authCfg.JWTSecret)
 	}
 
 	return handlerSet

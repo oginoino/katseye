@@ -20,6 +20,8 @@ var (
 	ErrInvalidUserData = errors.New("invalid user data")
 	// ErrInvalidRole indicates an unsupported role assignment was requested.
 	ErrInvalidRole = errors.New("invalid role")
+	// ErrInvalidProfileType indicates the provided profile type is unsupported.
+	ErrInvalidProfileType = errors.New("invalid profile type")
 	// ErrUserAlreadyExists indicates an attempt to create a user with a duplicated email.
 	ErrUserAlreadyExists = errors.New("user already exists")
 	// ErrUserNotFound indicates lookups failed to locate the target user.
@@ -66,7 +68,15 @@ func (s *AuthService) Authenticate(ctx context.Context, email, password string) 
 }
 
 // CreateUser provisions a new authenticated user with the provided credentials and authorisation metadata.
-func (s *AuthService) CreateUser(ctx context.Context, email, password string, active bool, role entities.Role, permissions []string) (*entities.User, error) {
+func (s *AuthService) CreateUser(
+	ctx context.Context,
+	email, password string,
+	active bool,
+	role entities.Role,
+	permissions []string,
+	profileType entities.UserProfileType,
+	profileID primitive.ObjectID,
+) (*entities.User, error) {
 	if s == nil || s.userRepo == nil {
 		return nil, ErrInvalidUserData
 	}
@@ -84,6 +94,17 @@ func (s *AuthService) CreateUser(ctx context.Context, email, password string, ac
 		return nil, ErrInvalidRole
 	}
 
+	if profileType == "" {
+		profileType = entities.ProfileTypeServiceAccount
+	}
+	if !entities.IsValidProfileType(profileType) {
+		return nil, ErrInvalidProfileType
+	}
+
+	if profileType != entities.ProfileTypeServiceAccount && profileID.IsZero() {
+		return nil, ErrInvalidUserData
+	}
+
 	existing, err := s.userRepo.FindByEmail(ctx, email)
 	if err != nil {
 		return nil, err
@@ -98,6 +119,8 @@ func (s *AuthService) CreateUser(ctx context.Context, email, password string, ac
 		Active:      active,
 		Role:        role,
 		Permissions: permissions,
+		ProfileType: profileType,
+		ProfileID:   profileID,
 	}
 	if err := user.SetPassword(password); err != nil {
 		return nil, err
