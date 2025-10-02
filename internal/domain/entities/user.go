@@ -2,21 +2,39 @@ package entities
 
 import (
 	"errors"
+	"sort"
 	"strings"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 )
 
+// Role represents the authorization level of a user account.
+type Role string
+
+const (
+	RoleAdmin   Role = "admin"
+	RoleManager Role = "manager"
+	RoleUser    Role = "user"
+
+	PermissionManageUsers = "users:manage"
+)
+
 // ErrInvalidPassword indicates the provided password does not match the stored hash.
-var ErrInvalidPassword = errors.New("invalid password")
+var (
+	ErrInvalidPassword = errors.New("invalid password")
+	ErrEmptyPassword   = errors.New("password must not be empty")
+	ErrInvalidRole     = errors.New("invalid role")
+)
 
 // User represents an authenticated account within the system.
 type User struct {
-	ID           primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	Email        string             `json:"email" bson:"email"`
-	PasswordHash string             `json:"-" bson:"password_hash"`
-	Active       bool               `json:"active" bson:"active"`
+	ID           primitive.ObjectID
+	Email        string
+	PasswordHash string
+	Active       bool
+	Role         Role
+	Permissions  []string
 }
 
 // Normalize prepares user fields for persistence/lookup.
@@ -25,6 +43,20 @@ func (u *User) Normalize() {
 		return
 	}
 	u.Email = strings.TrimSpace(strings.ToLower(u.Email))
+	role := Role(strings.TrimSpace(strings.ToLower(u.Role.String())))
+	if role == "" {
+		role = RoleUser
+	}
+	if !IsValidRole(role) {
+		role = RoleUser
+	}
+	u.Role = role
+
+	perms := normalizePermissions(u.Permissions)
+	if u.Role == RoleAdmin {
+		perms = normalizePermissions(append(perms, PermissionManageUsers))
+	}
+	u.Permissions = perms
 }
 
 // CheckPassword compares a clear-text password with the stored bcrypt hash.
@@ -38,10 +70,110 @@ func (u *User) CheckPassword(password string) error {
 	return nil
 }
 
+// SetPassword hashes and stores the provided clear-text password.
+func (u *User) SetPassword(password string) error {
+	if u == nil {
+		return ErrInvalidPassword
+	}
+	password = strings.TrimSpace(password)
+	if password == "" {
+		return ErrEmptyPassword
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	u.PasswordHash = string(hash)
+	return nil
+}
+
 // IsActive returns true when the account is enabled for authentication.
 func (u *User) IsActive() bool {
 	if u == nil {
 		return false
 	}
 	return u.Active
+}
+
+// HasAnyRole returns true when the user possesses at least one of the provided roles.
+func (u *User) HasAnyRole(roles ...Role) bool {
+	if u == nil || len(roles) == 0 {
+		return false
+	}
+	for _, role := range roles {
+		if strings.EqualFold(role.String(), u.Role.String()) {
+			return true
+		}
+	}
+	return false
+}
+
+// HasPermission returns true when the user has the given permission (case insensitive).
+func (u *User) HasPermission(permission string) bool {
+	if u == nil {
+		return false
+	}
+	permission = strings.TrimSpace(strings.ToLower(permission))
+	if permission == "" {
+		return false
+	}
+	for _, perm := range u.Permissions {
+		if perm == permission {
+			return true
+		}
+	}
+	return false
+}
+
+// String returns the string representation of the role.
+func (r Role) String() string {
+	return string(r)
+}
+
+// IsValidRole reports whether the provided role belongs to the list of supported roles.
+func IsValidRole(role Role) bool {
+	switch Role(strings.TrimSpace(strings.ToLower(role.String()))) {
+	case RoleAdmin, RoleManager, RoleUser:
+		return true
+	default:
+		return false
+	}
+}
+
+// ParseRole converts the provided string into a Role, validating the value.
+func ParseRole(role string) (Role, error) {
+	candidate := Role(strings.TrimSpace(strings.ToLower(role)))
+	if candidate == "" {
+		return RoleUser, nil
+	}
+	if !IsValidRole(candidate) {
+		return "", ErrInvalidRole
+	}
+	return candidate, nil
+}
+
+func normalizePermissions(perms []string) []string {
+	if len(perms) == 0 {
+		return nil
+	}
+
+	set := make(map[string]struct{}, len(perms))
+	for _, perm := range perms {
+		perm = strings.TrimSpace(strings.ToLower(perm))
+		if perm == "" {
+			continue
+		}
+		set[perm] = struct{}{}
+	}
+
+	if len(set) == 0 {
+		return nil
+	}
+
+	normalized := make([]string, 0, len(set))
+	for perm := range set {
+		normalized = append(normalized, perm)
+	}
+	sort.Strings(normalized)
+	return normalized
 }

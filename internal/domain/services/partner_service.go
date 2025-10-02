@@ -3,8 +3,8 @@ package services
 import (
 	"context"
 	"errors"
-	"katseye/internal/application/interfaces/repositories"
 	"katseye/internal/domain/entities"
+	"katseye/internal/domain/repositories"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )

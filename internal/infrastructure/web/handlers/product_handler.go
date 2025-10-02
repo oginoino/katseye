@@ -1,8 +1,10 @@
 package handlers
 
 import (
-	"katseye/internal/domain/entities"
+	"errors"
+
 	"katseye/internal/domain/services"
+	"katseye/internal/infrastructure/web/dto"
 	"katseye/internal/infrastructure/web/response"
 
 	"github.com/gin-gonic/gin"
@@ -29,7 +31,7 @@ func (h *ProductHandler) GetProduct(c *gin.Context) {
 
 	product, err := h.productService.GetProductByID(c.Request.Context(), id)
 	if err != nil {
-		response.NewNotFoundResponse(c, "Product not found", err.Error())
+		response.NewInternalServerErrorResponse(c, "Failed to retrieve product", err.Error())
 		return
 	}
 
@@ -38,23 +40,37 @@ func (h *ProductHandler) GetProduct(c *gin.Context) {
 		return
 	}
 
-	response.NewSuccessResponse(c, "Product retrieved successfully", product)
+	response.NewSuccessResponse(c, "Product retrieved successfully", dto.NewProductResponse(product))
 }
 
 func (h *ProductHandler) CreateProduct(c *gin.Context) {
-	var product entities.Product
-	if err := c.ShouldBindJSON(&product); err != nil {
+	var req dto.ProductRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		response.NewBadRequestResponse(c, "Invalid request payload", err.Error())
 		return
 	}
 
-	err := h.productService.CreateProduct(c.Request.Context(), &product)
+	product, err := req.ToEntity(primitive.NilObjectID)
 	if err != nil {
-		response.NewInternalServerErrorResponse(c, "Failed to create product", err.Error())
+		response.NewBadRequestResponse(c, "Invalid product payload", err.Error())
 		return
 	}
 
-	response.NewCreatedResponse(c, "Product created successfully", product)
+	if err := h.productService.CreateProduct(c.Request.Context(), product); err != nil {
+		switch {
+		case errors.Is(err, services.ErrPartnerNotFound):
+			response.NewNotFoundResponse(c, "Partner not found", err.Error())
+		case errors.Is(err, services.ErrProductTypeNotAccepted):
+			response.NewBadRequestResponse(c, "Product type not accepted", err.Error())
+		case errors.Is(err, services.ErrPartnerRepositoryUnavailable):
+			response.NewInternalServerErrorResponse(c, "Partner data unavailable", err.Error())
+		default:
+			response.NewInternalServerErrorResponse(c, "Failed to create product", err.Error())
+		}
+		return
+	}
+
+	response.NewCreatedResponse(c, "Product created successfully", dto.NewProductResponse(product))
 }
 
 func (h *ProductHandler) UpdateProduct(c *gin.Context) {
@@ -65,20 +81,33 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 		return
 	}
 
-	var product entities.Product
-	if err := c.ShouldBindJSON(&product); err != nil {
+	var req dto.ProductRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		response.NewBadRequestResponse(c, "Invalid request payload", err.Error())
 		return
 	}
-	product.ID = id
 
-	err = h.productService.UpdateProduct(c.Request.Context(), &product)
+	product, err := req.ToEntity(id)
 	if err != nil {
-		response.NewInternalServerErrorResponse(c, "Failed to update product", err.Error())
+		response.NewBadRequestResponse(c, "Invalid product payload", err.Error())
 		return
 	}
 
-	response.NewSuccessResponse(c, "Product updated successfully", product)
+	if err := h.productService.UpdateProduct(c.Request.Context(), product); err != nil {
+		switch {
+		case errors.Is(err, services.ErrPartnerNotFound):
+			response.NewNotFoundResponse(c, "Partner not found", err.Error())
+		case errors.Is(err, services.ErrProductTypeNotAccepted):
+			response.NewBadRequestResponse(c, "Product type not accepted", err.Error())
+		case errors.Is(err, services.ErrPartnerRepositoryUnavailable):
+			response.NewInternalServerErrorResponse(c, "Partner data unavailable", err.Error())
+		default:
+			response.NewInternalServerErrorResponse(c, "Failed to update product", err.Error())
+		}
+		return
+	}
+
+	response.NewSuccessResponse(c, "Product updated successfully", dto.NewProductResponse(product))
 }
 
 func (h *ProductHandler) DeleteProduct(c *gin.Context) {
@@ -89,7 +118,6 @@ func (h *ProductHandler) DeleteProduct(c *gin.Context) {
 		return
 	}
 
-	// Optional: Check if product exists before deleting
 	existingProduct, err := h.productService.GetProductByID(c.Request.Context(), id)
 	if err != nil {
 		response.NewInternalServerErrorResponse(c, "Failed to retrieve product", err.Error())
@@ -101,8 +129,7 @@ func (h *ProductHandler) DeleteProduct(c *gin.Context) {
 		return
 	}
 
-	err = h.productService.DeleteProduct(c.Request.Context(), id)
-	if err != nil {
+	if err := h.productService.DeleteProduct(c.Request.Context(), id); err != nil {
 		response.NewInternalServerErrorResponse(c, "Failed to delete product", err.Error())
 		return
 	}
@@ -111,11 +138,7 @@ func (h *ProductHandler) DeleteProduct(c *gin.Context) {
 }
 
 func (h *ProductHandler) ListProducts(c *gin.Context) {
-	// Extract query parameters for filtering
 	filter := make(map[string]interface{})
-
-	// You can add query parameter parsing here
-	// Example: if c.Query("category") != "" { filter["product_category"] = c.Query("category") }
 
 	products, err := h.productService.ListProducts(c.Request.Context(), filter)
 	if err != nil {
@@ -123,5 +146,5 @@ func (h *ProductHandler) ListProducts(c *gin.Context) {
 		return
 	}
 
-	response.NewSuccessResponse(c, "Products retrieved successfully", products)
+	response.NewSuccessResponse(c, "Products retrieved successfully", dto.NewProductResponseList(products))
 }

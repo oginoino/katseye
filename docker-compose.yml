@@ -1,0 +1,36 @@
+services:
+  app:
+    build: .
+    container_name: katseye_api
+    env_file:
+      - .env.docker
+    depends_on:
+      - mongo
+      - redis
+    ports:
+      - "8080:8080"
+
+  mongo:
+    image: mongo:7.0
+    container_name: katseye_mongo
+    env_file:
+      - .env.docker
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+      - ./docker/mongo/init-user.js:/docker-entrypoint-initdb.d/init-user.js:ro
+
+  redis:
+    image: redis:7-alpine
+    container_name: katseye_redis
+    env_file:
+      - .env.docker
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  mongo_data:
+  redis_data:

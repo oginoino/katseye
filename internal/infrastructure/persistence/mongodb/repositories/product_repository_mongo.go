@@ -3,6 +3,7 @@ package mongodb
 import (
 	"context"
 	"katseye/internal/domain/entities"
+	"katseye/internal/infrastructure/persistence/mongodb/models"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -20,24 +21,24 @@ func NewProductRepositoryMongo(collection *mongo.Collection) *productRepositoryM
 }
 
 func (r *productRepositoryMongo) GetProductByID(ctx context.Context, id primitive.ObjectID) (*entities.Product, error) {
-	var product entities.Product
-	err := r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&product)
+	var doc models.ProductDocument
+	err := r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&doc)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil // Product not found
 		}
 		return nil, err
 	}
-	return &product, nil
+	return doc.ToEntity(), nil
 }
 
 func (r *productRepositoryMongo) CreateProduct(ctx context.Context, product *entities.Product) error {
-	_, err := r.collection.InsertOne(ctx, product)
+	_, err := r.collection.InsertOne(ctx, models.NewProductDocument(product))
 	return err
 }
 
 func (r *productRepositoryMongo) UpdateProduct(ctx context.Context, product *entities.Product) error {
-	_, err := r.collection.UpdateOne(ctx, bson.M{"_id": product.ID}, bson.M{"$set": product})
+	_, err := r.collection.UpdateOne(ctx, bson.M{"_id": product.ID}, bson.M{"$set": models.NewProductDocument(product)})
 	return err
 }
 
@@ -55,11 +56,11 @@ func (r *productRepositoryMongo) ListProducts(ctx context.Context, filter map[st
 	defer cursor.Close(ctx)
 
 	for cursor.Next(ctx) {
-		var product entities.Product
-		if err := cursor.Decode(&product); err != nil {
+		var doc models.ProductDocument
+		if err := cursor.Decode(&doc); err != nil {
 			return nil, err
 		}
-		products = append(products, &product)
+		products = append(products, doc.ToEntity())
 	}
 
 	if err := cursor.Err(); err != nil {
