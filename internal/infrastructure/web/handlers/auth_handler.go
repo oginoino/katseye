@@ -10,6 +10,7 @@ import (
 
 	"katseye/internal/domain/entities"
 	"katseye/internal/domain/services"
+	"katseye/internal/infrastructure/web/dto"
 	"katseye/internal/infrastructure/web/response"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -155,7 +156,7 @@ func (h *AuthHandler) CreateUser(c *gin.Context) {
 		return
 	}
 
-	response.NewCreatedResponse(c, "User created successfully", user)
+	response.NewCreatedResponse(c, "User created successfully", dto.NewUserResponse(user))
 }
 
 func (h *AuthHandler) DeleteUser(c *gin.Context) {

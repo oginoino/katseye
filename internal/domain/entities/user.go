@@ -29,12 +29,12 @@ var (
 
 // User represents an authenticated account within the system.
 type User struct {
-	ID           primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	Email        string             `json:"email" bson:"email"`
-	PasswordHash string             `json:"-" bson:"password_hash"`
-	Active       bool               `json:"active" bson:"active"`
-	Role         Role               `json:"role" bson:"role"`
-	Permissions  []string           `json:"permissions,omitempty" bson:"permissions,omitempty"`
+	ID           primitive.ObjectID
+	Email        string
+	PasswordHash string
+	Active       bool
+	Role         Role
+	Permissions  []string
 }
 
 // Normalize prepares user fields for persistence/lookup.

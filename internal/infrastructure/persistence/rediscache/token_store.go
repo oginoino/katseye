@@ -8,7 +8,7 @@ import (
 	"time"
 
 	goredis "github.com/redis/go-redis/v9"
-	"katseye/internal/application/interfaces/security"
+	"katseye/internal/domain/security"
 )
 
 const (
@@ -75,4 +75,3 @@ func revocationKey(token string) string {
 	hash := sha256.Sum256([]byte(token))
 	return tokenRevocationNamespace + hex.EncodeToString(hash[:])
 }
-

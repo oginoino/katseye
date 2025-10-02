@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"katseye/internal/application/interfaces/security"
+	"katseye/internal/domain/security"
 )
 
 // ErrTokenStoreUnavailable indicates the token store dependency was not configured.

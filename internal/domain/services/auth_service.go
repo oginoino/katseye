@@ -5,8 +5,8 @@ import (
 	"errors"
 	"strings"
 
-	interfaces "katseye/internal/application/interfaces/repositories"
 	"katseye/internal/domain/entities"
+	"katseye/internal/domain/repositories"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -28,10 +28,10 @@ var (
 
 // AuthService handles credential verification against persisted users.
 type AuthService struct {
-	userRepo interfaces.UserRepository
+	userRepo repositories.UserRepository
 }
 
-func NewAuthService(userRepo interfaces.UserRepository) *AuthService {
+func NewAuthService(userRepo repositories.UserRepository) *AuthService {
 	return &AuthService{userRepo: userRepo}
 }
 
@@ -105,7 +105,7 @@ func (s *AuthService) CreateUser(ctx context.Context, email, password string, ac
 	user.Normalize()
 
 	if err := s.userRepo.CreateUser(ctx, user); err != nil {
-		if errors.Is(err, interfaces.ErrUserAlreadyExists) {
+		if errors.Is(err, repositories.ErrUserAlreadyExists) {
 			return nil, ErrUserAlreadyExists
 		}
 		return nil, err
@@ -124,7 +124,7 @@ func (s *AuthService) DeleteUser(ctx context.Context, id primitive.ObjectID) err
 	}
 
 	if err := s.userRepo.DeleteUser(ctx, id); err != nil {
-		if errors.Is(err, interfaces.ErrUserNotFound) {
+		if errors.Is(err, repositories.ErrUserNotFound) {
 			return ErrUserNotFound
 		}
 		return err
@@ -144,7 +144,7 @@ func (s *AuthService) GetUserByID(ctx context.Context, id primitive.ObjectID) (*
 
 	user, err := s.userRepo.FindByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, interfaces.ErrUserNotFound) {
+		if errors.Is(err, repositories.ErrUserNotFound) {
 			return nil, ErrUserNotFound
 		}
 		return nil, err

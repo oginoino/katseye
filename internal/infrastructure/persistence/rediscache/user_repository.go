@@ -9,8 +9,8 @@ import (
 
 	goredis "github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"katseye/internal/application/interfaces/repositories"
 	"katseye/internal/domain/entities"
+	"katseye/internal/domain/repositories"
 )
 
 type userRepository struct {

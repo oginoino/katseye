@@ -9,39 +9,34 @@ import (
 )
 
 type Product struct {
-	ID                primitive.ObjectID           `json:"id" bson:"_id, unique"`
-	ProductName       string                       `json:"product_name" bson:"product_name"`
-	ProductCategory   valueObjects.ProductCategory `json:"product_category" bson:"product_category"`
-	ProductAttributes ProductAttributes            `json:"product_attributes" bson:"product_attributes"`
-	ProductPartner    Partner                      `json:"product_partner" bson:"product_partner"`
-	ProductType       valueObjects.ProductType     `json:"product_type" bson:"product_type"`
+	ID          primitive.ObjectID
+	Name        string
+	Category    valueObjects.ProductCategory
+	Attributes  ProductAttributes
+	PartnerID   primitive.ObjectID
+	ProductType valueObjects.ProductType
 }
 
 // Validate performs validation on the product entity
 func (p *Product) Validate() error {
-	if p.ProductName == "" {
-		return errors.New("product_name is required")
+	if p == nil {
+		return errors.New("product is nil")
+	}
+
+	if p.Name == "" {
+		return errors.New("product name is required")
+	}
+
+	if p.PartnerID.IsZero() {
+		return errors.New("partner id is required")
 	}
 
 	if err := p.ProductType.Validate(); err != nil {
 		return err
 	}
 
-	if err := p.ProductAttributes.Validate(p.ProductType); err != nil {
+	if err := p.Attributes.Validate(p.ProductType); err != nil {
 		return err
-	}
-
-	// Validate that the product type is accepted by the partner
-	partnerAccepts := false
-	for _, acceptedType := range p.ProductPartner.AcceptedTypes {
-		if acceptedType == p.ProductType {
-			partnerAccepts = true
-			break
-		}
-	}
-
-	if !partnerAccepts {
-		return errors.New("product type is not accepted by the partner")
 	}
 
 	return nil

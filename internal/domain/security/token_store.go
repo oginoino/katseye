@@ -12,4 +12,3 @@ type TokenStore interface {
 	// IsRevoked reports whether the token has been revoked.
 	IsRevoked(ctx context.Context, token string) (bool, error)
 }
-

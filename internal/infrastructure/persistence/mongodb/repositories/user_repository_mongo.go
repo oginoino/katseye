@@ -10,8 +10,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	interfaces "katseye/internal/application/interfaces/repositories"
 	"katseye/internal/domain/entities"
+	"katseye/internal/domain/repositories"
+	"katseye/internal/infrastructure/persistence/mongodb/models"
 )
 
 type UserRepositoryMongo struct {
@@ -42,17 +43,15 @@ func (r *UserRepositoryMongo) FindByEmail(ctx context.Context, email string) (*e
 		"permissions":   1,
 	})
 
-	var user entities.User
-	if err := r.collection.FindOne(ctx, filter, opts).Decode(&user); err != nil {
+	var doc models.UserDocument
+	if err := r.collection.FindOne(ctx, filter, opts).Decode(&doc); err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
 		}
 		return nil, err
 	}
 
-	user.Normalize()
-
-	return &user, nil
+	return doc.ToEntity(), nil
 }
 
 func (r *UserRepositoryMongo) FindByID(ctx context.Context, id primitive.ObjectID) (*entities.User, error) {
@@ -74,17 +73,15 @@ func (r *UserRepositoryMongo) FindByID(ctx context.Context, id primitive.ObjectI
 		"permissions":   1,
 	})
 
-	var user entities.User
-	if err := r.collection.FindOne(ctx, filter, opts).Decode(&user); err != nil {
+	var doc models.UserDocument
+	if err := r.collection.FindOne(ctx, filter, opts).Decode(&doc); err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return nil, nil
 		}
 		return nil, err
 	}
 
-	user.Normalize()
-
-	return &user, nil
+	return doc.ToEntity(), nil
 }
 
 func (r *UserRepositoryMongo) CreateUser(ctx context.Context, user *entities.User) error {
@@ -95,12 +92,10 @@ func (r *UserRepositoryMongo) CreateUser(ctx context.Context, user *entities.Use
 		return errors.New("user payload must not be nil")
 	}
 
-	user.Normalize()
-
-	_, err := r.collection.InsertOne(ctx, user)
+	_, err := r.collection.InsertOne(ctx, models.NewUserDocument(user))
 	if err != nil {
 		if mongo.IsDuplicateKeyError(err) {
-			return interfaces.ErrUserAlreadyExists
+			return repositories.ErrUserAlreadyExists
 		}
 		return err
 	}
@@ -113,7 +108,7 @@ func (r *UserRepositoryMongo) DeleteUser(ctx context.Context, id primitive.Objec
 		return errors.New("user repository not configured")
 	}
 	if id.IsZero() {
-		return interfaces.ErrUserNotFound
+		return repositories.ErrUserNotFound
 	}
 
 	result, err := r.collection.DeleteOne(ctx, bson.M{"_id": id})
@@ -121,7 +116,7 @@ func (r *UserRepositoryMongo) DeleteUser(ctx context.Context, id primitive.Objec
 		return err
 	}
 	if result.DeletedCount == 0 {
-		return interfaces.ErrUserNotFound
+		return repositories.ErrUserNotFound
 	}
 
 	return nil
