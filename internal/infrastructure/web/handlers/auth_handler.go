@@ -17,23 +17,26 @@ import (
 
 const defaultTokenTTL = 24 * time.Hour
 const claimsContextKey = "jwt_claims"
+const rawTokenContextKey = "jwt_raw_token"
 
 type AuthHandler struct {
-	authService *services.AuthService
-	secret      []byte
-	tokenTTL    time.Duration
+	authService  *services.AuthService
+	tokenService *services.TokenService
+	secret       []byte
+	tokenTTL     time.Duration
 }
 
-func NewAuthHandler(service *services.AuthService, secret string) *AuthHandler {
+func NewAuthHandler(service *services.AuthService, tokenService *services.TokenService, secret string) *AuthHandler {
 	secret = strings.TrimSpace(secret)
 	if service == nil || secret == "" {
 		return nil
 	}
 
 	return &AuthHandler{
-		authService: service,
-		secret:      []byte(secret),
-		tokenTTL:    defaultTokenTTL,
+		authService:  service,
+		tokenService: tokenService,
+		secret:       []byte(secret),
+		tokenTTL:     defaultTokenTTL,
 	}
 }
 
@@ -199,8 +202,31 @@ func (h *AuthHandler) DeleteUser(c *gin.Context) {
 }
 
 func (h *AuthHandler) Logout(c *gin.Context) {
+	if h == nil {
+		response.NewUnauthorizedResponse(c, "Unauthorized", "authentication handler not configured")
+		return
+	}
+
+	claimsValue, _ := c.Get(claimsContextKey)
+	rawTokenValue, _ := c.Get(rawTokenContextKey)
+
+	claims, _ := claimsValue.(jwt.MapClaims)
+	rawToken, _ := rawTokenValue.(string)
+
+	message := "Token invalidated on client side"
+
+	if h.tokenService != nil && rawToken != "" && claims != nil {
+		if expiresAt, ok := extractExpiration(claims); ok {
+			if err := h.tokenService.RevokeToken(c.Request.Context(), rawToken, expiresAt); err != nil {
+				response.NewInternalServerErrorResponse(c, "Failed to revoke token", err.Error())
+				return
+			}
+			message = "Token revoked"
+		}
+	}
+
 	response.NewSuccessResponse(c, "Logout successful", gin.H{
-		"message": "Token invalidated on client side",
+		"message": message,
 	})
 }
 
@@ -257,6 +283,19 @@ func (h *AuthHandler) authorizeUserManagement(c *gin.Context) (*entities.User, b
 
 	response.NewForbiddenResponse(c, "Forbidden", "insufficient permissions")
 	return nil, false
+}
+
+func extractExpiration(claims jwt.MapClaims) (time.Time, bool) {
+	if claims == nil {
+		return time.Time{}, false
+	}
+
+	exp, err := claims.GetExpirationTime()
+	if err != nil || exp == nil {
+		return time.Time{}, false
+	}
+
+	return exp.Time, true
 }
 
 func (h *AuthHandler) generateToken(user *entities.User) (string, error) {

@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
@@ -16,10 +17,12 @@ const (
 	bearerPrefix        = "Bearer "
 	contextKeyToken     = "jwt_token"
 	contextKeyClaims    = "jwt_claims"
+	contextKeyRawToken  = "jwt_raw_token"
 )
 
 type jwtAuthConfig struct {
-	publicPaths map[string]struct{}
+	publicPaths       map[string]struct{}
+	revocationChecker TokenRevocationChecker
 }
 
 // JWTOption allows customizing the middleware behaviour.
@@ -38,6 +41,18 @@ func WithPublicPaths(paths ...string) JWTOption {
 			}
 			cfg.publicPaths[p] = struct{}{}
 		}
+	}
+}
+
+// TokenRevocationChecker reports whether a token has been revoked.
+type TokenRevocationChecker interface {
+	IsTokenRevoked(ctx context.Context, token string) (bool, error)
+}
+
+// WithTokenRevocationChecker sets the component responsible for checking token revocation.
+func WithTokenRevocationChecker(checker TokenRevocationChecker) JWTOption {
+	return func(cfg *jwtAuthConfig) {
+		cfg.revocationChecker = checker
 	}
 }
 
@@ -88,7 +103,22 @@ func NewJWTAuthMiddleware(secret string, opts ...JWTOption) (gin.HandlerFunc, er
 			return
 		}
 
+		if config.revocationChecker != nil {
+			revoked, revocationErr := config.revocationChecker.IsTokenRevoked(c.Request.Context(), tokenString)
+			if revocationErr != nil {
+				response.NewInternalServerErrorResponse(c, "Token validation error", revocationErr.Error())
+				c.Abort()
+				return
+			}
+			if revoked {
+				response.NewUnauthorizedResponse(c, "Invalid token", "token revoked")
+				c.Abort()
+				return
+			}
+		}
+
 		c.Set(contextKeyToken, token)
+		c.Set(contextKeyRawToken, tokenString)
 		if claims, ok := token.Claims.(jwt.MapClaims); ok {
 			c.Set(contextKeyClaims, claims)
 		}

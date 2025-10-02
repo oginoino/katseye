@@ -2,6 +2,7 @@ package config
 
 import (
 	interfaces "katseye/internal/application/interfaces/repositories"
+	"katseye/internal/application/interfaces/security"
 	mongorepositories "katseye/internal/infrastructure/persistence/mongodb/repositories"
 	rediscache "katseye/internal/infrastructure/persistence/rediscache"
 )
@@ -11,6 +12,7 @@ type RepositorySet struct {
 	Partner interfaces.PartnerRepository
 	Address interfaces.AddressRepository
 	User    interfaces.UserRepository
+	Token   security.TokenStore
 }
 
 func buildRepositories(resources *MongoResources, cache *RedisResources) RepositorySet {
@@ -22,12 +24,14 @@ func buildRepositories(resources *MongoResources, cache *RedisResources) Reposit
 	var partnerRepo interfaces.PartnerRepository = mongorepositories.NewPartnerRepositoryMongo(resources.Collections.Partners)
 	var addressRepo interfaces.AddressRepository = mongorepositories.NewAddressRepositoryMongo(resources.Collections.Addresses)
 	var userRepo interfaces.UserRepository = mongorepositories.NewUserRepositoryMongo(resources.Collections.Users)
+	var tokenStore security.TokenStore
 
 	if cache != nil && cache.Client != nil {
 		productRepo = rediscache.NewProductRepository(cache.Client, cache.TTL, productRepo)
 		partnerRepo = rediscache.NewPartnerRepository(cache.Client, cache.TTL, partnerRepo)
 		addressRepo = rediscache.NewAddressRepository(cache.Client, cache.TTL, addressRepo)
 		userRepo = rediscache.NewUserRepository(cache.Client, cache.TTL, userRepo)
+		tokenStore = rediscache.NewTokenStore(cache.Client)
 	}
 
 	return RepositorySet{
@@ -35,5 +39,6 @@ func buildRepositories(resources *MongoResources, cache *RedisResources) Reposit
 		Partner: partnerRepo,
 		Address: addressRepo,
 		User:    userRepo,
+		Token:   tokenStore,
 	}
 }

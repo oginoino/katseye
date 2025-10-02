@@ -7,6 +7,7 @@ type ServiceSet struct {
 	Partner *services.PartnerService
 	Address *services.AddressService
 	Auth    *services.AuthService
+	Token   *services.TokenService
 }
 
 func buildServices(repos RepositorySet) ServiceSet {
@@ -15,5 +16,6 @@ func buildServices(repos RepositorySet) ServiceSet {
 		Partner: services.NewPartnerService(repos.Partner),
 		Address: services.NewAddressService(repos.Address),
 		Auth:    services.NewAuthService(repos.User),
+		Token:   services.NewTokenService(repos.Token),
 	}
 }
