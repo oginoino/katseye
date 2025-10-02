@@ -2,8 +2,15 @@ package router
 
 import (
 	"github.com/gin-gonic/gin"
+	"katseye/internal/domain/entities"
 	"katseye/internal/infrastructure/web/handlers"
+	webmiddleware "katseye/internal/infrastructure/web/middleware"
 )
+
+var partnerAccessibleProfiles = []entities.UserProfileType{
+	entities.ProfileTypePartnerManager,
+	entities.ProfileTypeServiceAccount,
+}
 
 func registerAuthRoutes(r gin.IRouter, handler *handlers.AuthHandler) {
 	if handler == nil {
@@ -14,6 +21,7 @@ func registerAuthRoutes(r gin.IRouter, handler *handlers.AuthHandler) {
 	auth.POST("/login", handler.Login)
 	auth.POST("/logout", handler.Logout)
 	serviceAccounts := auth.Group("/service-accounts")
+	serviceAccounts.Use(webmiddleware.RequireProfileTypes(partnerAccessibleProfiles...))
 	serviceAccounts.POST("", handler.CreateUser)
 	serviceAccounts.DELETE("/:id", handler.DeleteUser)
 }
@@ -24,6 +32,7 @@ func registerProductRoutes(r gin.IRouter, handler *handlers.ProductHandler) {
 	}
 
 	products := r.Group("/products")
+	products.Use(webmiddleware.RequireProfileTypes(partnerAccessibleProfiles...))
 	products.GET("", handler.ListProducts)
 	products.POST("", handler.CreateProduct)
 	products.GET("/:id", handler.GetProduct)
@@ -37,6 +46,7 @@ func registerPartnerRoutes(r gin.IRouter, handler *handlers.PartnerHandler) {
 	}
 
 	partners := r.Group("/partners")
+	partners.Use(webmiddleware.RequireProfileTypes(partnerAccessibleProfiles...))
 	partners.GET("", handler.ListPartners)
 	partners.POST("", handler.CreatePartner)
 	partners.GET("/:id", handler.GetPartner)
@@ -50,6 +60,7 @@ func registerAddressRoutes(r gin.IRouter, handler *handlers.AddressHandler) {
 	}
 
 	addresses := r.Group("/addresses")
+	addresses.Use(webmiddleware.RequireProfileTypes(partnerAccessibleProfiles...))
 	addresses.GET("", handler.ListAddresses)
 	addresses.POST("", handler.CreateAddress)
 	addresses.GET("/:id", handler.GetAddress)
@@ -63,6 +74,7 @@ func registerConsumerRoutes(r gin.IRouter, handler *handlers.ConsumerHandler) {
 	}
 
 	customers := r.Group("/customers")
+	customers.Use(webmiddleware.RequireProfileTypes(partnerAccessibleProfiles...))
 	customers.GET("", handler.ListConsumers)
 	customers.POST("", handler.CreateConsumer)
 	customers.GET("/:id", handler.GetConsumer)
