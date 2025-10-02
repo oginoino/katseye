@@ -13,8 +13,9 @@ func registerAuthRoutes(r gin.IRouter, handler *handlers.AuthHandler) {
 	auth := r.Group("/auth")
 	auth.POST("/login", handler.Login)
 	auth.POST("/logout", handler.Logout)
-	auth.POST("/users", handler.CreateUser)
-	auth.DELETE("/users/:id", handler.DeleteUser)
+	serviceAccounts := auth.Group("/service-accounts")
+	serviceAccounts.POST("", handler.CreateUser)
+	serviceAccounts.DELETE("/:id", handler.DeleteUser)
 }
 
 func registerProductRoutes(r gin.IRouter, handler *handlers.ProductHandler) {
@@ -61,12 +62,12 @@ func registerConsumerRoutes(r gin.IRouter, handler *handlers.ConsumerHandler) {
 		return
 	}
 
-	consumers := r.Group("/consumers")
-	consumers.GET("", handler.ListConsumers)
-	consumers.POST("", handler.CreateConsumer)
-	consumers.GET("/:id", handler.GetConsumer)
-	consumers.PUT("/:id", handler.UpdateConsumer)
-	consumers.DELETE("/:id", handler.DeleteConsumer)
-	consumers.POST("/:id/products/:product_id", handler.ContractProduct)
-	consumers.DELETE("/:id/products/:product_id", handler.RemoveProduct)
+	customers := r.Group("/customers")
+	customers.GET("", handler.ListConsumers)
+	customers.POST("", handler.CreateConsumer)
+	customers.GET("/:id", handler.GetConsumer)
+	customers.PUT("/:id", handler.UpdateConsumer)
+	customers.DELETE("/:id", handler.DeleteConsumer)
+	customers.POST("/:id/products/:product_id", handler.ContractProduct)
+	customers.DELETE("/:id/products/:product_id", handler.RemoveProduct)
 }
