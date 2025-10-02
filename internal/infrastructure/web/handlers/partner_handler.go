@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"katseye/internal/domain/entities"
 	"katseye/internal/domain/services"
+	"katseye/internal/infrastructure/web/dto"
 	"katseye/internal/infrastructure/web/response"
 
 	"github.com/gin-gonic/gin"
@@ -29,7 +29,7 @@ func (h *PartnerHandler) GetPartner(c *gin.Context) {
 
 	partner, err := h.partnerService.GetPartnerByID(c.Request.Context(), id)
 	if err != nil {
-		response.NewNotFoundResponse(c, "Partner not found", err.Error())
+		response.NewInternalServerErrorResponse(c, "Failed to retrieve partner", err.Error())
 		return
 	}
 
@@ -38,23 +38,28 @@ func (h *PartnerHandler) GetPartner(c *gin.Context) {
 		return
 	}
 
-	response.NewSuccessResponse(c, "Partner retrieved successfully", partner)
+	response.NewSuccessResponse(c, "Partner retrieved successfully", dto.NewPartnerResponse(partner))
 }
 
 func (h *PartnerHandler) CreatePartner(c *gin.Context) {
-	var partner entities.Partner
-	if err := c.ShouldBindJSON(&partner); err != nil {
+	var req dto.PartnerRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		response.NewBadRequestResponse(c, "Invalid request payload", err.Error())
 		return
 	}
 
-	err := h.partnerService.CreatePartner(c.Request.Context(), &partner)
+	partner, err := req.ToEntity(primitive.NilObjectID)
 	if err != nil {
+		response.NewBadRequestResponse(c, "Invalid partner payload", err.Error())
+		return
+	}
+
+	if err := h.partnerService.CreatePartner(c.Request.Context(), partner); err != nil {
 		response.NewInternalServerErrorResponse(c, "Failed to create partner", err.Error())
 		return
 	}
 
-	response.NewCreatedResponse(c, "Partner created successfully", partner)
+	response.NewCreatedResponse(c, "Partner created successfully", dto.NewPartnerResponse(partner))
 }
 
 func (h *PartnerHandler) UpdatePartner(c *gin.Context) {
@@ -65,20 +70,24 @@ func (h *PartnerHandler) UpdatePartner(c *gin.Context) {
 		return
 	}
 
-	var partner entities.Partner
-	if err := c.ShouldBindJSON(&partner); err != nil {
+	var req dto.PartnerRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		response.NewBadRequestResponse(c, "Invalid request payload", err.Error())
 		return
 	}
-	partner.ID = id
 
-	err = h.partnerService.UpdatePartner(c.Request.Context(), &partner)
+	partner, err := req.ToEntity(id)
 	if err != nil {
+		response.NewBadRequestResponse(c, "Invalid partner payload", err.Error())
+		return
+	}
+
+	if err := h.partnerService.UpdatePartner(c.Request.Context(), partner); err != nil {
 		response.NewInternalServerErrorResponse(c, "Failed to update partner", err.Error())
 		return
 	}
 
-	response.NewSuccessResponse(c, "Partner updated successfully", partner)
+	response.NewSuccessResponse(c, "Partner updated successfully", dto.NewPartnerResponse(partner))
 }
 
 func (h *PartnerHandler) DeletePartner(c *gin.Context) {
@@ -89,7 +98,6 @@ func (h *PartnerHandler) DeletePartner(c *gin.Context) {
 		return
 	}
 
-	// Optional: Check if partner exists before deleting
 	existingPartner, err := h.partnerService.GetPartnerByID(c.Request.Context(), id)
 	if err != nil {
 		response.NewInternalServerErrorResponse(c, "Failed to retrieve partner", err.Error())
@@ -101,8 +109,7 @@ func (h *PartnerHandler) DeletePartner(c *gin.Context) {
 		return
 	}
 
-	err = h.partnerService.DeletePartner(c.Request.Context(), id)
-	if err != nil {
+	if err := h.partnerService.DeletePartner(c.Request.Context(), id); err != nil {
 		response.NewInternalServerErrorResponse(c, "Failed to delete partner", err.Error())
 		return
 	}
@@ -111,7 +118,6 @@ func (h *PartnerHandler) DeletePartner(c *gin.Context) {
 }
 
 func (h *PartnerHandler) ListPartners(c *gin.Context) {
-	// You can extend this to accept query parameters for filtering
 	filter := make(map[string]interface{})
 
 	partners, err := h.partnerService.ListPartners(c.Request.Context(), filter)
@@ -120,5 +126,5 @@ func (h *PartnerHandler) ListPartners(c *gin.Context) {
 		return
 	}
 
-	response.NewSuccessResponse(c, "Partners retrieved successfully", partners)
+	response.NewSuccessResponse(c, "Partners retrieved successfully", dto.NewPartnerResponseList(partners))
 }

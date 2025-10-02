@@ -9,21 +9,24 @@ import (
 )
 
 type Address struct {
-	ID               primitive.ObjectID       `json:"id" bson:"_id, unique"`
-	Country          string                   `json:"country" bson:"country"`
-	State            string                   `json:"state" bson:"state"`
-	City             string                   `json:"city" bson:"city"`
-	District         string                   `json:"district" bson:"district"`
-	Street           string                   `json:"street" bson:"street"`
-	Number           string                   `json:"number" bson:"number"`
-	Complement       string                   `json:"complement" bson:"complement"`
-	PostalCode       string                   `json:"postal_code" bson:"postal_code"`
-	Type             valueObjects.AddressType `json:"type" bson:"type"`
-	FormattedAddress string                   `json:"formatted_address" bson:"formatted_address"`
+	ID               primitive.ObjectID
+	Country          string
+	State            string
+	City             string
+	District         string
+	Street           string
+	Number           string
+	Complement       string
+	PostalCode       string
+	Type             valueObjects.AddressType
+	FormattedAddress string
 }
 
 // Validate performs validation on the address entity
 func (a *Address) Validate() error {
+	if a == nil {
+		return errors.New("address is nil")
+	}
 	if a.Country == "" {
 		return errors.New("country is required")
 	}
@@ -40,7 +43,7 @@ func (a *Address) Validate() error {
 		return errors.New("number is required")
 	}
 	if a.PostalCode == "" {
-		return errors.New("postal_code is required")
+		return errors.New("postal code is required")
 	}
 	if a.Type == "" {
 		return errors.New("type is required")
@@ -48,4 +51,3 @@ func (a *Address) Validate() error {
 	// FormattedAddress can be optional or generated
 	return nil
 }
-

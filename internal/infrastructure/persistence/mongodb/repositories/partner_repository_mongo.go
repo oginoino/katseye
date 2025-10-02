@@ -3,8 +3,9 @@ package mongodb
 import (
 	"context"
 	"errors"
-	"katseye/internal/application/interfaces/repositories"
 	"katseye/internal/domain/entities"
+	"katseye/internal/domain/repositories"
+	"katseye/internal/infrastructure/persistence/mongodb/models"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -22,24 +23,24 @@ func NewPartnerRepositoryMongo(collection *mongo.Collection) repositories.Partne
 }
 
 func (r *PartnerRepositoryMongo) GetPartnerByID(ctx context.Context, id primitive.ObjectID) (*entities.Partner, error) {
-	var partner entities.Partner
-	err := r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&partner)
+	var doc models.PartnerDocument
+	err := r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&doc)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return nil, nil // Partner not found
 		}
 		return nil, err
 	}
-	return &partner, nil
+	return doc.ToEntity(), nil
 }
 
 func (r *PartnerRepositoryMongo) CreatePartner(ctx context.Context, partner *entities.Partner) error {
-	_, err := r.collection.InsertOne(ctx, partner)
+	_, err := r.collection.InsertOne(ctx, models.NewPartnerDocument(partner))
 	return err
 }
 
 func (r *PartnerRepositoryMongo) UpdatePartner(ctx context.Context, partner *entities.Partner) error {
-	_, err := r.collection.UpdateOne(ctx, bson.M{"_id": partner.ID}, bson.M{"$set": partner})
+	_, err := r.collection.UpdateOne(ctx, bson.M{"_id": partner.ID}, bson.M{"$set": models.NewPartnerDocument(partner)})
 	return err
 }
 
@@ -57,11 +58,11 @@ func (r *PartnerRepositoryMongo) ListPartners(ctx context.Context, filter map[st
 	defer cursor.Close(ctx)
 
 	for cursor.Next(ctx) {
-		var partner entities.Partner
-		if err := cursor.Decode(&partner); err != nil {
+		var doc models.PartnerDocument
+		if err := cursor.Decode(&doc); err != nil {
 			return nil, err
 		}
-		partners = append(partners, &partner)
+		partners = append(partners, doc.ToEntity())
 	}
 
 	if err := cursor.Err(); err != nil {

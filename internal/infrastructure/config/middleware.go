@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"katseye/internal/domain/services"
 	webmiddleware "katseye/internal/infrastructure/web/middleware"
 )
 
@@ -12,7 +13,7 @@ type MiddlewareSet struct {
 	JWT gin.HandlerFunc
 }
 
-func buildMiddlewares(cfg AuthConfig) (MiddlewareSet, error) {
+func buildMiddlewares(cfg AuthConfig, tokenService *services.TokenService) (MiddlewareSet, error) {
 	set := MiddlewareSet{}
 
 	secret := strings.TrimSpace(cfg.JWTSecret)
@@ -20,7 +21,12 @@ func buildMiddlewares(cfg AuthConfig) (MiddlewareSet, error) {
 		return set, fmt.Errorf("jwt secret is not configured")
 	}
 
-	middleware, err := webmiddleware.NewJWTAuthMiddleware(secret, webmiddleware.WithPublicPaths("/auth/login"))
+	options := []webmiddleware.JWTOption{webmiddleware.WithPublicPaths("/auth/login")}
+	if tokenService != nil {
+		options = append(options, webmiddleware.WithTokenRevocationChecker(tokenService))
+	}
+
+	middleware, err := webmiddleware.NewJWTAuthMiddleware(secret, options...)
 	if err != nil {
 		return set, fmt.Errorf("creating jwt middleware: %w", err)
 	}

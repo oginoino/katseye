@@ -12,6 +12,9 @@ func registerAuthRoutes(r gin.IRouter, handler *handlers.AuthHandler) {
 
 	auth := r.Group("/auth")
 	auth.POST("/login", handler.Login)
+	auth.POST("/logout", handler.Logout)
+	auth.POST("/users", handler.CreateUser)
+	auth.DELETE("/users/:id", handler.DeleteUser)
 }
 
 func registerProductRoutes(r gin.IRouter, handler *handlers.ProductHandler) {
