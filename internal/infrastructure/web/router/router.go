@@ -8,10 +8,11 @@ import (
 )
 
 type Handlers struct {
-	Product *handlers.ProductHandler
-	Partner *handlers.PartnerHandler
-	Address *handlers.AddressHandler
-	Auth    *handlers.AuthHandler
+	Product  *handlers.ProductHandler
+	Partner  *handlers.PartnerHandler
+	Address  *handlers.AddressHandler
+	Consumer *handlers.ConsumerHandler
+	Auth     *handlers.AuthHandler
 }
 
 type Server struct {

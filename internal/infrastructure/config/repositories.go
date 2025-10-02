@@ -8,11 +8,12 @@ import (
 )
 
 type RepositorySet struct {
-	Product repositories.ProductRepository
-	Partner repositories.PartnerRepository
-	Address repositories.AddressRepository
-	User    repositories.UserRepository
-	Token   security.TokenStore
+	Product  repositories.ProductRepository
+	Partner  repositories.PartnerRepository
+	Address  repositories.AddressRepository
+	Consumer repositories.ConsumerRepository
+	User     repositories.UserRepository
+	Token    security.TokenStore
 }
 
 func buildRepositories(resources *MongoResources, cache *RedisResources) RepositorySet {
@@ -23,6 +24,7 @@ func buildRepositories(resources *MongoResources, cache *RedisResources) Reposit
 	var productRepo repositories.ProductRepository = mongorepositories.NewProductRepositoryMongo(resources.Collections.Products)
 	var partnerRepo repositories.PartnerRepository = mongorepositories.NewPartnerRepositoryMongo(resources.Collections.Partners)
 	var addressRepo repositories.AddressRepository = mongorepositories.NewAddressRepositoryMongo(resources.Collections.Addresses)
+	var consumerRepo repositories.ConsumerRepository = mongorepositories.NewConsumerRepositoryMongo(resources.Collections.Consumers)
 	var userRepo repositories.UserRepository = mongorepositories.NewUserRepositoryMongo(resources.Collections.Users)
 	var tokenStore security.TokenStore
 
@@ -35,10 +37,11 @@ func buildRepositories(resources *MongoResources, cache *RedisResources) Reposit
 	}
 
 	return RepositorySet{
-		Product: productRepo,
-		Partner: partnerRepo,
-		Address: addressRepo,
-		User:    userRepo,
-		Token:   tokenStore,
+		Product:  productRepo,
+		Partner:  partnerRepo,
+		Address:  addressRepo,
+		Consumer: consumerRepo,
+		User:     userRepo,
+		Token:    tokenStore,
 	}
 }

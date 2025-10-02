@@ -18,6 +18,7 @@ type MongoCollections struct {
 	Partners  *mongo.Collection
 	Addresses *mongo.Collection
 	Users     *mongo.Collection
+	Consumers *mongo.Collection
 }
 
 func newMongoResources(cfg MongoConfig) (*MongoResources, error) {
@@ -36,6 +37,7 @@ func newMongoResources(cfg MongoConfig) (*MongoResources, error) {
 			Partners:  database.Collection("partners"),
 			Addresses: database.Collection("addresses"),
 			Users:     database.Collection("users"),
+			Consumers: database.Collection("consumers"),
 		},
 	}, nil
 }

@@ -6,10 +6,11 @@ import (
 )
 
 type HandlerSet struct {
-	Product *handlers.ProductHandler
-	Partner *handlers.PartnerHandler
-	Address *handlers.AddressHandler
-	Auth    *handlers.AuthHandler
+	Product  *handlers.ProductHandler
+	Partner  *handlers.PartnerHandler
+	Address  *handlers.AddressHandler
+	Consumer *handlers.ConsumerHandler
+	Auth     *handlers.AuthHandler
 }
 
 func buildHandlers(services ServiceSet, authCfg AuthConfig) HandlerSet {
@@ -27,6 +28,10 @@ func buildHandlers(services ServiceSet, authCfg AuthConfig) HandlerSet {
 		handlerSet.Address = handlers.NewAddressHandler(services.Address)
 	}
 
+	if services.Consumer != nil {
+		handlerSet.Consumer = handlers.NewConsumerHandler(services.Consumer)
+	}
+
 	if services.Auth != nil {
 		handlerSet.Auth = handlers.NewAuthHandler(services.Auth, services.Token, authCfg.JWTSecret)
 	}
@@ -36,9 +41,10 @@ func buildHandlers(services ServiceSet, authCfg AuthConfig) HandlerSet {
 
 func (h HandlerSet) toRouterHandlers() webrouter.Handlers {
 	return webrouter.Handlers{
-		Product: h.Product,
-		Partner: h.Partner,
-		Address: h.Address,
-		Auth:    h.Auth,
+		Product:  h.Product,
+		Partner:  h.Partner,
+		Address:  h.Address,
+		Consumer: h.Consumer,
+		Auth:     h.Auth,
 	}
 }

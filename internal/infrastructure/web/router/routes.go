@@ -55,3 +55,18 @@ func registerAddressRoutes(r gin.IRouter, handler *handlers.AddressHandler) {
 	addresses.PUT("/:id", handler.UpdateAddress)
 	addresses.DELETE("/:id", handler.DeleteAddress)
 }
+
+func registerConsumerRoutes(r gin.IRouter, handler *handlers.ConsumerHandler) {
+	if handler == nil {
+		return
+	}
+
+	consumers := r.Group("/consumers")
+	consumers.GET("", handler.ListConsumers)
+	consumers.POST("", handler.CreateConsumer)
+	consumers.GET("/:id", handler.GetConsumer)
+	consumers.PUT("/:id", handler.UpdateConsumer)
+	consumers.DELETE("/:id", handler.DeleteConsumer)
+	consumers.POST("/:id/products/:product_id", handler.ContractProduct)
+	consumers.DELETE("/:id/products/:product_id", handler.RemoveProduct)
+}
