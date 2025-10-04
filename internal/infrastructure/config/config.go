@@ -16,12 +16,15 @@ const (
 	EnvironmentProduction  = "production"
 	EnvironmentDevelopment = "development"
 
-	defaultHTTPPort  = "8080"
-	defaultMongoURI  = "mongodb://localhost:27017"
-	defaultMongoDB   = "katseye"
-	defaultRedisAddr = "localhost:6379"
-	defaultRedisDB   = 0
-	defaultRedisTTL  = 5 * time.Minute
+	defaultHTTPPort    = "8080"
+	defaultMongoURI    = "mongodb://localhost:27017"
+	defaultMongoDB     = "katseye"
+	defaultRedisAddr   = "localhost:6379"
+	defaultRedisDB     = 0
+	defaultRedisTTL    = 5 * time.Minute
+	defaultCORSOrigins = "*"
+	defaultCORSMethods = "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+	defaultCORSHeaders = "Authorization,Content-Type,Accept,Origin"
 
 	redisEnabledEnvKey = "REDIS_ENABLED"
 	redisAddrEnvKey    = "REDIS_ADDR"
@@ -29,11 +32,15 @@ const (
 	redisDBEnvKey      = "REDIS_DB"
 	redisTTLEnvKey     = "REDIS_CACHE_TTL"
 
-	appEnvKey          = "APP_ENV"
-	ginModeEnvKey      = "GIN_MODE"
-	jwtSecretEnvKey    = "JWT_SECRET"
-	productionEnvFile  = ".env"
-	developmentEnvFile = ".env.example"
+	appEnvKey                  = "APP_ENV"
+	ginModeEnvKey              = "GIN_MODE"
+	jwtSecretEnvKey            = "JWT_SECRET"
+	productionEnvFile          = ".env"
+	developmentEnvFile         = ".env.example"
+	corsAllowedOriginsEnvKey   = "CORS_ALLOWED_ORIGINS"
+	corsAllowedMethodsEnvKey   = "CORS_ALLOWED_METHODS"
+	corsAllowedHeadersEnvKey   = "CORS_ALLOWED_HEADERS"
+	corsAllowCredentialsEnvKey = "CORS_ALLOW_CREDENTIALS"
 )
 
 type Config struct {
@@ -45,8 +52,12 @@ type Config struct {
 }
 
 type HTTPConfig struct {
-	Port    string
-	GinMode string
+	Port             string
+	GinMode          string
+	AllowedOrigins   []string
+	AllowedMethods   []string
+	AllowedHeaders   []string
+	AllowCredentials bool
 }
 
 type MongoConfig struct {
@@ -87,8 +98,12 @@ func Load() (Config, error) {
 		cachedConfig.cfg = Config{
 			Environment: envName,
 			HTTP: HTTPConfig{
-				Port:    lookupEnv("PORT", defaultHTTPPort),
-				GinMode: lookupEnv(ginModeEnvKey, gin.ReleaseMode),
+				Port:             lookupEnv("PORT", defaultHTTPPort),
+				GinMode:          lookupEnv(ginModeEnvKey, gin.ReleaseMode),
+				AllowedOrigins:   parseCSV(lookupEnv(corsAllowedOriginsEnvKey, ""), defaultCORSOrigins),
+				AllowedMethods:   parseCSV(lookupEnv(corsAllowedMethodsEnvKey, ""), defaultCORSMethods),
+				AllowedHeaders:   parseCSV(lookupEnv(corsAllowedHeadersEnvKey, ""), defaultCORSHeaders),
+				AllowCredentials: parseBool(lookupEnv(corsAllowCredentialsEnvKey, "")),
 			},
 			Mongo: MongoConfig{
 				URI:      lookupEnv("MONGO_URI", defaultMongoURI),
@@ -241,4 +256,38 @@ func parseDuration(value string, fallback time.Duration) time.Duration {
 		return time.Duration(seconds) * time.Second
 	}
 	return fallback
+}
+
+func parseCSV(value string, fallback string) []string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return splitAndTrim(fallback)
+	}
+	return splitAndTrim(value)
+}
+
+func splitAndTrim(value string) []string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil
+	}
+	parts := strings.Split(value, ",")
+	result := make([]string, 0, len(parts))
+	seen := make(map[string]struct{})
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(part)
+		if trimmed == "" {
+			continue
+		}
+		key := strings.ToLower(trimmed)
+		if _, exists := seen[key]; exists {
+			continue
+		}
+		seen[key] = struct{}{}
+		result = append(result, trimmed)
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
 }

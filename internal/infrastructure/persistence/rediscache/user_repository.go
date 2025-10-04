@@ -20,12 +20,14 @@ type userRepository struct {
 }
 
 type cachedUser struct {
-	ID           primitive.ObjectID `json:"id"`
-	Email        string             `json:"email"`
-	PasswordHash string             `json:"password_hash"`
-	Active       bool               `json:"active"`
-	Role         entities.Role      `json:"role"`
-	Permissions  []string           `json:"permissions,omitempty"`
+	ID           primitive.ObjectID       `json:"id"`
+	Email        string                   `json:"email"`
+	PasswordHash string                   `json:"password_hash"`
+	Active       bool                     `json:"active"`
+	Role         entities.Role            `json:"role"`
+	Permissions  []string                 `json:"permissions,omitempty"`
+	ProfileType  entities.UserProfileType `json:"profile_type"`
+	ProfileID    primitive.ObjectID       `json:"profile_id"`
 }
 
 func NewUserRepository(client *goredis.Client, ttl time.Duration, repo repositories.UserRepository) repositories.UserRepository {
@@ -216,6 +218,8 @@ func newCachedUser(user *entities.User) *cachedUser {
 		Active:       user.Active,
 		Role:         user.Role,
 		Permissions:  perms,
+		ProfileType:  user.ProfileType,
+		ProfileID:    user.ProfileID,
 	}
 }
 
@@ -234,6 +238,8 @@ func (u *cachedUser) toEntity() *entities.User {
 		Active:       u.Active,
 		Role:         u.Role,
 		Permissions:  perms,
+		ProfileType:  u.ProfileType,
+		ProfileID:    u.ProfileID,
 	}
 
 	user.Normalize()

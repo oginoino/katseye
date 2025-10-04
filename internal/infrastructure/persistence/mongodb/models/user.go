@@ -14,6 +14,8 @@ type UserDocument struct {
 	Active       bool               `bson:"active"`
 	Role         string             `bson:"role"`
 	Permissions  []string           `bson:"permissions"`
+	ProfileType  string             `bson:"profile_type"`
+	ProfileID    primitive.ObjectID `bson:"profile_id,omitempty"`
 }
 
 // ToEntity converte o documento em entidade de domínio.
@@ -30,6 +32,8 @@ func (doc UserDocument) ToEntity() *entities.User {
 		Active:       doc.Active,
 		Role:         role,
 		Permissions:  append([]string(nil), doc.Permissions...),
+		ProfileType:  entities.UserProfileType(doc.ProfileType),
+		ProfileID:    doc.ProfileID,
 	}
 	user.Normalize()
 
@@ -52,5 +56,7 @@ func NewUserDocument(user *entities.User) UserDocument {
 		Active:       normalized.Active,
 		Role:         normalized.Role.String(),
 		Permissions:  append([]string(nil), normalized.Permissions...),
+		ProfileType:  normalized.ProfileType.String(),
+		ProfileID:    normalized.ProfileID,
 	}
 }

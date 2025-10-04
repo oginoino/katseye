@@ -24,6 +24,7 @@ type ConsumerRequest struct {
 	PrimaryAddressID     string                       `json:"primary_address_id"`
 	AdditionalAddressIDs []string                     `json:"additional_address_ids"`
 	ContractedProductIDs []string                     `json:"contracted_product_ids"`
+	UserID               string                       `json:"user_id,omitempty"`
 }
 
 type ConsumerPersonalDataRequest struct {
@@ -81,6 +82,7 @@ type ConsumerResponse struct {
 	PrimaryAddressID     string                        `json:"primary_address_id"`
 	AdditionalAddressIDs []string                      `json:"additional_address_ids"`
 	ContractedProducts   []string                      `json:"contracted_products"`
+	UserID               string                        `json:"user_id,omitempty"`
 	CreatedAt            time.Time                     `json:"created_at"`
 	UpdatedAt            time.Time                     `json:"updated_at"`
 }
@@ -176,6 +178,15 @@ func (req *ConsumerRequest) ToEntity(id primitive.ObjectID) (*entities.Consumer,
 		contractedProducts = append(contractedProducts, pid)
 	}
 
+	var userID primitive.ObjectID
+	if trimmed := strings.TrimSpace(req.UserID); trimmed != "" {
+		parsed, err := primitive.ObjectIDFromHex(trimmed)
+		if err != nil {
+			return nil, fmt.Errorf("invalid user id: %w", err)
+		}
+		userID = parsed
+	}
+
 	personalData, err := req.PersonalData.toEntity(consumerType)
 	if err != nil {
 		return nil, err
@@ -197,6 +208,7 @@ func (req *ConsumerRequest) ToEntity(id primitive.ObjectID) (*entities.Consumer,
 		PrimaryAddressID:     primaryAddressID,
 		AdditionalAddressIDs: additionalAddressIDs,
 		ContractedProducts:   contractedProducts,
+		UserID:               userID,
 	}
 
 	return consumer, nil
@@ -290,6 +302,10 @@ func NewConsumerResponse(consumer *entities.Consumer) ConsumerResponse {
 		ContractedProducts:   objectIDSliceToHex(consumer.ContractedProducts),
 		CreatedAt:            consumer.CreatedAt,
 		UpdatedAt:            consumer.UpdatedAt,
+	}
+
+	if !consumer.UserID.IsZero() {
+		response.UserID = consumer.UserID.Hex()
 	}
 
 	return response

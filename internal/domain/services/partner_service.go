@@ -3,10 +3,17 @@ package services
 import (
 	"context"
 	"errors"
+
 	"katseye/internal/domain/entities"
 	"katseye/internal/domain/repositories"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
+)
+
+var (
+	ErrPartnerManagerAlreadyLinked = errors.New("partner manager already linked")
+	ErrPartnerManagerNotLinked     = errors.New("partner manager not linked")
+	ErrPartnerManagerRequired      = errors.New("partner must retain at least one manager profile")
 )
 
 type PartnerService struct {
@@ -59,4 +66,72 @@ func (s *PartnerService) DeletePartner(ctx context.Context, id primitive.ObjectI
 
 func (s *PartnerService) ListPartners(ctx context.Context, filter map[string]interface{}) ([]*entities.Partner, error) {
 	return s.partnerRepo.ListPartners(ctx, filter)
+}
+
+func (s *PartnerService) AssignManagerProfile(ctx context.Context, partnerID, userID primitive.ObjectID) error {
+	if s == nil || s.partnerRepo == nil {
+		return ErrPartnerRepositoryUnavailable
+	}
+	if partnerID.IsZero() {
+		return errors.New("partner id is required")
+	}
+	if userID.IsZero() {
+		return errors.New("user id is required")
+	}
+
+	partner, err := s.partnerRepo.GetPartnerByID(ctx, partnerID)
+	if err != nil {
+		return err
+	}
+	if partner == nil {
+		return ErrPartnerNotFound
+	}
+
+	if partner.HasManagerProfile(userID) {
+		return ErrPartnerManagerAlreadyLinked
+	}
+
+	partner.ManagerProfileIDs = append(partner.ManagerProfileIDs, userID)
+
+	if err := partner.Validate(); err != nil {
+		return err
+	}
+
+	return s.partnerRepo.UpdatePartner(ctx, partner)
+}
+
+func (s *PartnerService) RemoveManagerProfile(ctx context.Context, partnerID, userID primitive.ObjectID) error {
+	if s == nil || s.partnerRepo == nil {
+		return ErrPartnerRepositoryUnavailable
+	}
+	if partnerID.IsZero() {
+		return errors.New("partner id is required")
+	}
+	if userID.IsZero() {
+		return errors.New("user id is required")
+	}
+
+	partner, err := s.partnerRepo.GetPartnerByID(ctx, partnerID)
+	if err != nil {
+		return err
+	}
+	if partner == nil {
+		return ErrPartnerNotFound
+	}
+
+	if !partner.HasManagerProfile(userID) {
+		return ErrPartnerManagerNotLinked
+	}
+
+	if len(partner.ManagerProfileIDs) <= 1 {
+		return ErrPartnerManagerRequired
+	}
+
+	partner.RemoveManagerProfile(userID)
+
+	if err := partner.Validate(); err != nil {
+		return err
+	}
+
+	return s.partnerRepo.UpdatePartner(ctx, partner)
 }

@@ -30,6 +30,7 @@ type Consumer struct {
 	PrimaryAddressID     primitive.ObjectID
 	AdditionalAddressIDs []primitive.ObjectID
 	ContractedProducts   []primitive.ObjectID
+	UserID               primitive.ObjectID
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
 }
@@ -74,6 +75,14 @@ func (c *Consumer) HasContractedProduct(productID primitive.ObjectID) bool {
 	}
 
 	return false
+}
+
+// HasLinkedUser reports whether the consumer already has an associated authentication profile.
+func (c *Consumer) HasLinkedUser() bool {
+	if c == nil {
+		return false
+	}
+	return !c.UserID.IsZero()
 }
 
 func (c *Consumer) AddContractedProduct(productID primitive.ObjectID) error {

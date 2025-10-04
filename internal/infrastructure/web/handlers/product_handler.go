@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"katseye/internal/domain/services"
+	valueobjects "katseye/internal/domain/value_objects"
 	"katseye/internal/infrastructure/web/dto"
 	"katseye/internal/infrastructure/web/response"
 
@@ -12,12 +13,14 @@ import (
 )
 
 type ProductHandler struct {
-	productService *services.ProductService
+	productService  *services.ProductService
+	templateService *services.ProductTemplateService
 }
 
-func NewProductHandler(productService *services.ProductService) *ProductHandler {
+func NewProductHandler(productService *services.ProductService, templateService *services.ProductTemplateService) *ProductHandler {
 	return &ProductHandler{
-		productService: productService,
+		productService:  productService,
+		templateService: templateService,
 	}
 }
 
@@ -147,4 +150,36 @@ func (h *ProductHandler) ListProducts(c *gin.Context) {
 	}
 
 	response.NewSuccessResponse(c, "Products retrieved successfully", dto.NewProductResponseList(products))
+}
+
+func (h *ProductHandler) ListProductTemplates(c *gin.Context) {
+	if h == nil || h.templateService == nil {
+		response.NewInternalServerErrorResponse(c, "Product template service unavailable", "handler not configured")
+		return
+	}
+
+	templates := h.templateService.ListTemplates()
+	response.NewSuccessResponse(c, "Product templates retrieved successfully", dto.NewProductTemplateListResponse(templates))
+}
+
+func (h *ProductHandler) GetProductTemplate(c *gin.Context) {
+	if h == nil || h.templateService == nil {
+		response.NewInternalServerErrorResponse(c, "Product template service unavailable", "handler not configured")
+		return
+	}
+
+	requestedType := c.Param("type")
+	productType, err := valueobjects.NewProductType(requestedType)
+	if err != nil {
+		response.NewBadRequestResponse(c, "Invalid product type", err.Error())
+		return
+	}
+
+	template, ok := h.templateService.GetTemplate(productType)
+	if !ok {
+		response.NewNotFoundResponse(c, "Product template not found", "template not defined for the provided product type")
+		return
+	}
+
+	response.NewSuccessResponse(c, "Product template retrieved successfully", dto.NewProductTemplateResponse(template))
 }
