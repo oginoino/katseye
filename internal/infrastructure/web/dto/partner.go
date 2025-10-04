@@ -2,6 +2,7 @@ package dto
 
 import (
 	"fmt"
+	"strings"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
@@ -11,19 +12,21 @@ import (
 
 // PartnerRequest modela o payload de entrada para parceiros.
 type PartnerRequest struct {
-	Name          string                     `json:"partner_name"`
-	Type          string                     `json:"partner_type"`
-	Attributes    entities.PartnerAttributes `json:"partner_attributes"`
-	AcceptedTypes []string                   `json:"accepted_types"`
+	Name              string                     `json:"partner_name"`
+	Type              string                     `json:"partner_type"`
+	Attributes        entities.PartnerAttributes `json:"partner_attributes"`
+	ManagerProfileIDs []string                   `json:"manager_profile_ids"`
+	AcceptedTypes     []string                   `json:"accepted_types"`
 }
 
 // PartnerResponse padroniza a saída HTTP de parceiros.
 type PartnerResponse struct {
-	ID            string                     `json:"id"`
-	Name          string                     `json:"partner_name"`
-	Type          string                     `json:"partner_type"`
-	Attributes    entities.PartnerAttributes `json:"partner_attributes"`
-	AcceptedTypes []string                   `json:"accepted_types"`
+	ID                string                     `json:"id"`
+	Name              string                     `json:"partner_name"`
+	Type              string                     `json:"partner_type"`
+	Attributes        entities.PartnerAttributes `json:"partner_attributes"`
+	ManagerProfileIDs []string                   `json:"manager_profile_ids"`
+	AcceptedTypes     []string                   `json:"accepted_types"`
 }
 
 // ToEntity converte o DTO em uma entidade de parceiro.
@@ -46,12 +49,34 @@ func (req *PartnerRequest) ToEntity(id primitive.ObjectID) (*entities.Partner, e
 		acceptedTypes = append(acceptedTypes, productType)
 	}
 
+	managerProfileIDs := make([]primitive.ObjectID, 0, len(req.ManagerProfileIDs))
+	for _, rawID := range req.ManagerProfileIDs {
+		trimmed := strings.TrimSpace(rawID)
+		if trimmed == "" {
+			continue
+		}
+		managerID, err := primitive.ObjectIDFromHex(trimmed)
+		if err != nil {
+			return nil, fmt.Errorf("invalid manager profile id %q: %w", rawID, err)
+		}
+		managerProfileIDs = append(managerProfileIDs, managerID)
+	}
+
+	if len(req.ManagerProfileIDs) > 0 && len(managerProfileIDs) == 0 {
+		return nil, fmt.Errorf("manager_profile_ids must contain at least one valid identifier")
+	}
+
+	if len(managerProfileIDs) == 0 {
+		return nil, fmt.Errorf("manager_profile_ids is required")
+	}
+
 	partner := &entities.Partner{
-		ID:            id,
-		Name:          req.Name,
-		Type:          partnerType,
-		Attributes:    req.Attributes,
-		AcceptedTypes: acceptedTypes,
+		ID:                id,
+		Name:              req.Name,
+		Type:              partnerType,
+		Attributes:        req.Attributes,
+		ManagerProfileIDs: managerProfileIDs,
+		AcceptedTypes:     acceptedTypes,
 	}
 
 	return partner, nil
@@ -68,12 +93,18 @@ func NewPartnerResponse(partner *entities.Partner) PartnerResponse {
 		accepted = append(accepted, t.String())
 	}
 
+	managerProfiles := make([]string, 0, len(partner.ManagerProfileIDs))
+	for _, managerID := range partner.ManagerProfileIDs {
+		managerProfiles = append(managerProfiles, managerID.Hex())
+	}
+
 	return PartnerResponse{
-		ID:            partner.ID.Hex(),
-		Name:          partner.Name,
-		Type:          partner.Type.String(),
-		Attributes:    partner.Attributes,
-		AcceptedTypes: accepted,
+		ID:                partner.ID.Hex(),
+		Name:              partner.Name,
+		Type:              partner.Type.String(),
+		Attributes:        partner.Attributes,
+		ManagerProfileIDs: managerProfiles,
+		AcceptedTypes:     accepted,
 	}
 }
 

@@ -111,6 +111,17 @@ type ProductAttributes struct {
 	OverdraftCredit  *BaseProductAttributes      `json:"overdraft_credit,omitempty" bson:"overdraft_credit,omitempty"`
 	SecuredLoan      *BaseProductAttributes      `json:"secured_loan,omitempty" bson:"secured_loan,omitempty"`
 	MicrocreditLoan  *BaseProductAttributes      `json:"microcredit_loan,omitempty" bson:"microcredit_loan,omitempty"`
+	FGTSLoan         *BaseProductAttributes      `json:"fgts_loan,omitempty" bson:"fgts_loan,omitempty"`
+	IRPFLoan         *BaseProductAttributes      `json:"irpf_loan,omitempty" bson:"irpf_loan,omitempty"`
+	ReceivablesAdvance      *BaseProductAttributes      `json:"receivables_advance,omitempty" bson:"receivables_advance,omitempty"`
+	SecuredOverdraft        *BaseProductAttributes      `json:"secured_overdraft,omitempty" bson:"secured_overdraft,omitempty"`
+	InvestmentFinancing     *BaseProductAttributes      `json:"investment_financing,omitempty" bson:"investment_financing,omitempty"`
+	BNDESLoan               *BaseProductAttributes      `json:"bndes_loan,omitempty" bson:"bndes_loan,omitempty"`
+	AgriculturalCredit      *BaseProductAttributes      `json:"agricultural_credit,omitempty" bson:"agricultural_credit,omitempty"`
+	LeasingContract         *BaseProductAttributes      `json:"leasing_contract,omitempty" bson:"leasing_contract,omitempty"`
+	SolarEnergyLoan         *BaseProductAttributes      `json:"solar_energy_loan,omitempty" bson:"solar_energy_loan,omitempty"`
+	FintechLoan             *BaseProductAttributes      `json:"fintech_loan,omitempty" bson:"fintech_loan,omitempty"`
+	MicrocreditSolidaryLoan *BaseProductAttributes      `json:"microcredit_solidary_loan,omitempty" bson:"microcredit_solidary_loan,omitempty"`
 	// Add more product types as needed
 }
 
@@ -172,6 +183,61 @@ func (pa *ProductAttributes) GetAttributesForProductType(productType valueObject
 			pa.MicrocreditLoan = &BaseProductAttributes{}
 		}
 		return pa.MicrocreditLoan
+	case valueObjects.ProductTypeFGTSLoan:
+		if pa.FGTSLoan == nil {
+			pa.FGTSLoan = &BaseProductAttributes{}
+		}
+		return pa.FGTSLoan
+	case valueObjects.ProductTypeIRPFLoan:
+		if pa.IRPFLoan == nil {
+			pa.IRPFLoan = &BaseProductAttributes{}
+		}
+		return pa.IRPFLoan
+	case valueObjects.ProductTypeReceivablesAdvance:
+		if pa.ReceivablesAdvance == nil {
+			pa.ReceivablesAdvance = &BaseProductAttributes{}
+		}
+		return pa.ReceivablesAdvance
+	case valueObjects.ProductTypeSecuredOverdraft:
+		if pa.SecuredOverdraft == nil {
+			pa.SecuredOverdraft = &BaseProductAttributes{}
+		}
+		return pa.SecuredOverdraft
+	case valueObjects.ProductTypeInvestmentFin:
+		if pa.InvestmentFinancing == nil {
+			pa.InvestmentFinancing = &BaseProductAttributes{}
+		}
+		return pa.InvestmentFinancing
+	case valueObjects.ProductTypeBNDESLoan:
+		if pa.BNDESLoan == nil {
+			pa.BNDESLoan = &BaseProductAttributes{}
+		}
+		return pa.BNDESLoan
+	case valueObjects.ProductTypeAgriculturalCredit:
+		if pa.AgriculturalCredit == nil {
+			pa.AgriculturalCredit = &BaseProductAttributes{}
+		}
+		return pa.AgriculturalCredit
+	case valueObjects.ProductTypeLeasingContract:
+		if pa.LeasingContract == nil {
+			pa.LeasingContract = &BaseProductAttributes{}
+		}
+		return pa.LeasingContract
+	case valueObjects.ProductTypeSolarEnergyLoan:
+		if pa.SolarEnergyLoan == nil {
+			pa.SolarEnergyLoan = &BaseProductAttributes{}
+		}
+		return pa.SolarEnergyLoan
+	case valueObjects.ProductTypeFintechLoan:
+		if pa.FintechLoan == nil {
+			pa.FintechLoan = &BaseProductAttributes{}
+		}
+		return pa.FintechLoan
+	case valueObjects.ProductTypeMicrocreditSolidaryLoan:
+		if pa.MicrocreditSolidaryLoan == nil {
+			pa.MicrocreditSolidaryLoan = &BaseProductAttributes{}
+		}
+		return pa.MicrocreditSolidaryLoan
 	default:
 		return nil
 	}

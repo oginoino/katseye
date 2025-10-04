@@ -9,6 +9,8 @@ type UserResponse struct {
 	Active      bool     `json:"active"`
 	Role        string   `json:"role"`
 	Permissions []string `json:"permissions"`
+	ProfileType string   `json:"profile_type"`
+	ProfileID   string   `json:"profile_reference_id,omitempty"`
 }
 
 // NewUserResponse converte a entidade de domínio em DTO.
@@ -17,11 +19,18 @@ func NewUserResponse(user *entities.User) UserResponse {
 		return UserResponse{}
 	}
 
-	return UserResponse{
+	response := UserResponse{
 		ID:          user.ID.Hex(),
 		Email:       user.Email,
 		Active:      user.Active,
 		Role:        user.Role.String(),
 		Permissions: append([]string(nil), user.Permissions...),
+		ProfileType: user.ProfileType.String(),
 	}
+
+	if !user.ProfileID.IsZero() {
+		response.ProfileID = user.ProfileID.Hex()
+	}
+
+	return response
 }

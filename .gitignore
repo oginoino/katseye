@@ -3,3 +3,4 @@
 docker/mongo/init-user.js
 .env.docker
 go.sum
+postman/

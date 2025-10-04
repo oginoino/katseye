@@ -10,11 +10,19 @@ import (
 )
 
 type MiddlewareSet struct {
-	JWT gin.HandlerFunc
+	CORS gin.HandlerFunc
+	JWT  gin.HandlerFunc
 }
 
-func buildMiddlewares(cfg AuthConfig, tokenService *services.TokenService) (MiddlewareSet, error) {
+func buildMiddlewares(httpCfg HTTPConfig, cfg AuthConfig, tokenService *services.TokenService) (MiddlewareSet, error) {
 	set := MiddlewareSet{}
+
+	set.CORS = webmiddleware.NewCORSMiddleware(webmiddleware.CORSConfig{
+		AllowedOrigins:   httpCfg.AllowedOrigins,
+		AllowedMethods:   httpCfg.AllowedMethods,
+		AllowedHeaders:   httpCfg.AllowedHeaders,
+		AllowCredentials: httpCfg.AllowCredentials,
+	})
 
 	secret := strings.TrimSpace(cfg.JWTSecret)
 	if secret == "" {
@@ -37,6 +45,9 @@ func buildMiddlewares(cfg AuthConfig, tokenService *services.TokenService) (Midd
 
 func (m MiddlewareSet) toRouterMiddlewares() []gin.HandlerFunc {
 	var middlewares []gin.HandlerFunc
+	if m.CORS != nil {
+		middlewares = append(middlewares, m.CORS)
+	}
 	if m.JWT != nil {
 		middlewares = append(middlewares, m.JWT)
 	}

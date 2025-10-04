@@ -163,6 +163,14 @@ var (
 			DocumentMilitaryID,
 			DocumentProfessionalLicense,
 		},
+		"green": {
+			DocumentIDProof,
+			DocumentCPF,
+			DocumentCNPJ,
+			DocumentRG,
+			DocumentPassport,
+			DocumentDriverLicense,
+		},
 	}
 )
 
@@ -293,3 +301,53 @@ var CommonDocumentSets = map[string][]RequiredDocument{
 		DocumentAddressProof,
 	},
 }
+
+var (
+	// RequiredDocuments is a slice of all valid required documents
+	RequiredDocuments = []RequiredDocument{
+		DocumentIDProof,
+		DocumentCPF,
+		DocumentCNPJ,
+		DocumentRG,
+		DocumentPassport,
+		DocumentDriverLicense,
+		DocumentIncomeProof,
+		DocumentPayStub,
+		DocumentTaxReturn,
+		DocumentBankStatement,
+		DocumentEmploymentLetter,
+		DocumentProfitLoss,
+		DocumentAddressProof,
+		DocumentUtilityBill,
+		DocumentRentalAgreement,
+		DocumentPropertyDeed,
+		DocumentBusinessLicense,
+		DocumentArticlesOfIncorporation,
+		DocumentCommercialLicense,
+		DocumentFinancialStatements,
+		DocumentPropertyTax,
+		DocumentHomeInsurance,
+		DocumentAppraisalReport,
+		DocumentVehicleRegistration,
+		DocumentVehicleInsurance,
+		DocumentVehicleInvoice,
+		DocumentStudentID,
+		DocumentEnrollmentProof,
+		DocumentAcademicRecords,
+		DocumentMarriageCertificate,
+		DocumentBirthCertificate,
+		DocumentMilitaryID,
+		DocumentProfessionalLicense,
+	}
+
+	EcoFriendlyCategoryGreen = "green"
+
+	CertificationRequiredTrue = true
+
+	GovernmentIncentiveTrue = true
+
+	EligibleProjectsTrue = []string{
+		"education",
+		"special",
+	}
+)

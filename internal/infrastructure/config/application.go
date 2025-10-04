@@ -57,7 +57,7 @@ func Initialize() (*Application, error) {
 	repositories := buildRepositories(mongoResources, redisResources)
 	services := buildServices(repositories)
 	handlers := buildHandlers(services, settings.Auth)
-	middlewares, err := buildMiddlewares(settings.Auth, services.Token)
+	middlewares, err := buildMiddlewares(settings.HTTP, settings.Auth, services.Token)
 	if err != nil {
 		return nil, fmt.Errorf("configuring middlewares: %w", err)
 	}
