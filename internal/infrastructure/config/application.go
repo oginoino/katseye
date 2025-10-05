@@ -65,7 +65,7 @@ func Initialize() (*Application, error) {
 
 	log.Printf("http: server configured port=%s mode=%s", settings.HTTP.Port, settings.HTTP.GinMode)
 
-	return &Application{
+	app := &Application{
 		Config:       settings,
 		server:       server,
 		mongo:        mongoResources,
@@ -74,7 +74,9 @@ func Initialize() (*Application, error) {
 		services:     services,
 		handlers:     handlers,
 		middlewares:  middlewares,
-	}, nil
+	}
+
+	return app, nil
 }
 
 func (a *Application) Close(ctx context.Context) error {
