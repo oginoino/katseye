@@ -17,8 +17,43 @@ const (
 	RoleManager Role = "manager"
 	RoleUser    Role = "user"
 
-	PermissionManageUsers = "users:manage"
+	PermissionManageUsers    = "users:manage"
+	PermissionManageProducts = "products:manage"
+	PermissionManagePartners = "partners:manage"
+
+	PermissionEditUsers    = "users:edit"
+	PermissionEditProducts = "products:edit"
+	PermissionEditPartners = "partners:edit"
+
+	PermissionViewUsers    = "users:view"
+	PermissionViewProducts = "products:view"
+	PermissionViewPartners = "partners:view"
 )
+
+// rolePermissions defines the base permissions for each role
+var rolePermissions = map[Role][]string{
+	RoleAdmin: {
+		PermissionManageUsers,
+		PermissionManageProducts,
+		PermissionManagePartners,
+		PermissionEditUsers,
+		PermissionEditProducts,
+		PermissionEditPartners,
+		PermissionViewUsers,
+		PermissionViewProducts,
+		PermissionViewPartners,
+	},
+	RoleManager: {
+		PermissionEditProducts,
+		PermissionEditPartners,
+		PermissionViewUsers,
+		PermissionViewProducts,
+		PermissionViewPartners,
+	},
+	RoleUser: {
+		PermissionViewProducts,
+	},
+}
 
 // UserProfileType represents the type of profile associated with given credentials.
 type UserProfileType string
@@ -29,7 +64,6 @@ const (
 	ProfileTypeConsumer       UserProfileType = "consumer"
 )
 
-// ErrInvalidPassword indicates the provided password does not match the stored hash.
 var (
 	ErrInvalidPassword    = errors.New("invalid password")
 	ErrEmptyPassword      = errors.New("password must not be empty")
@@ -37,14 +71,13 @@ var (
 	ErrInvalidProfileType = errors.New("invalid profile type")
 )
 
-// User represents an authenticated account within the system.
 type User struct {
 	ID           primitive.ObjectID
 	Email        string
 	PasswordHash string
 	Active       bool
 	Role         Role
-	Permissions  []string
+	Permissions  []string // Custom permissions in addition to role-based permissions
 	ProfileType  UserProfileType
 	ProfileID    primitive.ObjectID
 }
@@ -64,11 +97,8 @@ func (u *User) Normalize() {
 	}
 	u.Role = role
 
-	perms := normalizePermissions(u.Permissions)
-	if u.Role == RoleAdmin {
-		perms = normalizePermissions(append(perms, PermissionManageUsers))
-	}
-	u.Permissions = perms
+	// Normalize only custom permissions (role-based permissions are computed)
+	u.Permissions = normalizePermissions(u.Permissions)
 
 	profileType := UserProfileType(strings.TrimSpace(strings.ToLower(u.ProfileType.String())))
 	if profileType == "" {
@@ -82,6 +112,39 @@ func (u *User) Normalize() {
 	if u.ProfileType == ProfileTypeServiceAccount {
 		u.ProfileID = primitive.NilObjectID
 	}
+}
+
+// GetEffectivePermissions returns all permissions for this user, combining
+// role-based permissions with custom permissions.
+func (u *User) GetEffectivePermissions() []string {
+	if u == nil {
+		return nil
+	}
+
+	// Get base permissions for the role
+	basePerms := rolePermissions[u.Role]
+	if basePerms == nil {
+		basePerms = []string{}
+	}
+
+	// Combine with custom permissions
+	allPerms := make([]string, 0, len(basePerms)+len(u.Permissions))
+	allPerms = append(allPerms, basePerms...)
+	allPerms = append(allPerms, u.Permissions...)
+
+	return normalizePermissions(allPerms)
+}
+
+// GetRolePermissions returns the base permissions for a given role.
+func GetRolePermissions(role Role) []string {
+	perms := rolePermissions[role]
+	if perms == nil {
+		return []string{}
+	}
+	// Return a copy to prevent external modification
+	result := make([]string, len(perms))
+	copy(result, perms)
+	return result
 }
 
 // CheckPassword compares a clear-text password with the stored bcrypt hash.
@@ -134,6 +197,7 @@ func (u *User) HasAnyRole(roles ...Role) bool {
 }
 
 // HasPermission returns true when the user has the given permission (case insensitive).
+// This checks both role-based and custom permissions.
 func (u *User) HasPermission(permission string) bool {
 	if u == nil {
 		return false
@@ -142,8 +206,45 @@ func (u *User) HasPermission(permission string) bool {
 	if permission == "" {
 		return false
 	}
+
+	// Check role-based permissions first
+	rolePerms := rolePermissions[u.Role]
+	for _, perm := range rolePerms {
+		if perm == permission {
+			return true
+		}
+	}
+
+	// Check custom permissions
 	for _, perm := range u.Permissions {
 		if perm == permission {
+			return true
+		}
+	}
+
+	return false
+}
+
+// HasAllPermissions returns true when the user has all the given permissions.
+func (u *User) HasAllPermissions(permissions ...string) bool {
+	if u == nil {
+		return false
+	}
+	for _, perm := range permissions {
+		if !u.HasPermission(perm) {
+			return false
+		}
+	}
+	return true
+}
+
+// HasAnyPermission returns true when the user has at least one of the given permissions.
+func (u *User) HasAnyPermission(permissions ...string) bool {
+	if u == nil {
+		return false
+	}
+	for _, perm := range permissions {
+		if u.HasPermission(perm) {
 			return true
 		}
 	}
