@@ -158,9 +158,9 @@ func (req *ConsumerRequest) ToEntity(id primitive.ObjectID) (*entities.Consumer,
 		if trimmed == "" {
 			continue
 		}
-		addrID, err := primitive.ObjectIDFromHex(trimmed)
-		if err != nil {
-			return nil, fmt.Errorf("invalid additional address id: %w", err)
+		addrID, addrErr := primitive.ObjectIDFromHex(trimmed)
+		if addrErr != nil {
+			return nil, fmt.Errorf("invalid additional address id: %w", addrErr)
 		}
 		additionalAddressIDs = append(additionalAddressIDs, addrID)
 	}
@@ -171,18 +171,18 @@ func (req *ConsumerRequest) ToEntity(id primitive.ObjectID) (*entities.Consumer,
 		if trimmed == "" {
 			continue
 		}
-		pid, err := primitive.ObjectIDFromHex(trimmed)
-		if err != nil {
-			return nil, fmt.Errorf("invalid contracted product id: %w", err)
+		pid, pidErr := primitive.ObjectIDFromHex(trimmed)
+		if pidErr != nil {
+			return nil, fmt.Errorf("invalid contracted product id: %w", pidErr)
 		}
 		contractedProducts = append(contractedProducts, pid)
 	}
 
 	var userID primitive.ObjectID
 	if trimmed := strings.TrimSpace(req.UserID); trimmed != "" {
-		parsed, err := primitive.ObjectIDFromHex(trimmed)
-		if err != nil {
-			return nil, fmt.Errorf("invalid user id: %w", err)
+		parsed, parseErr := primitive.ObjectIDFromHex(trimmed)
+		if parseErr != nil {
+			return nil, fmt.Errorf("invalid user id: %w", parseErr)
 		}
 		userID = parsed
 	}
