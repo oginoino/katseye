@@ -3,30 +3,42 @@ package main
 import (
 	"context"
 	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"katseye/internal/infrastructure/config"
 )
 
 func main() {
-	ctx := context.Background()
-
-	log.Println("startup: initializing application")
-
 	app, err := config.Initialize()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("initialization failed: %v", err)
 	}
 
-	defer func() {
-		log.Println("shutdown: releasing resources")
-		if closeErr := app.Close(ctx); closeErr != nil {
-			log.Printf("error closing application resources: %v", closeErr)
+	go func() {
+		if err := app.RunHTTPServer(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("server failed: %v", err)
 		}
 	}()
 
-	log.Println("startup: boot sequence complete, starting HTTP server")
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	log.Println("shutdown signal received")
 
-	if err := app.RunHTTPServer(); err != nil {
-		log.Fatal(err)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := app.HTTPServer().Shutdown(ctx); err != nil {
+		log.Printf("server shutdown failed: %v", err)
 	}
+
+	if err := app.Close(ctx); err != nil {
+		log.Printf("closing resources failed: %v", err)
+	}
+
+	log.Println("shutdown complete")
 }

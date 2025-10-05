@@ -1,6 +1,8 @@
 package router
 
 import (
+	"context"
+	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -17,7 +19,7 @@ type Handlers struct {
 
 type Server struct {
 	engine *gin.Engine
-	port   string
+	httpServer *http.Server
 }
 
 func New(cfg Config) *Server {
@@ -33,11 +35,7 @@ func New(cfg Config) *Server {
 
 	ConfigureRoutes(engine, cfg.Handlers)
 
-	return &Server{engine: engine, port: cfg.Port}
-}
-
-func (s *Server) Run() error {
-	address := s.port
+	address := cfg.Port
 
 	switch {
 	case address == "":
@@ -46,7 +44,20 @@ func (s *Server) Run() error {
 		address = ":" + address
 	}
 
-	return s.engine.Run(address)
+	httpServer := &http.Server{
+		Addr: address,
+		Handler: engine,
+	}
+
+	return &Server{engine: engine, httpServer: httpServer}
+}
+
+func (s *Server) Run() error {
+	return s.httpServer.ListenAndServe()
+}
+
+func (s *Server) Shutdown(ctx context.Context) error {
+	return s.httpServer.Shutdown(ctx)
 }
 
 func (s *Server) Engine() *gin.Engine {

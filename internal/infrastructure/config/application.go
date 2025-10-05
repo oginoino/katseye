@@ -21,6 +21,8 @@ type Application struct {
 }
 
 func Initialize() (*Application, error) {
+	ctx := context.Background()
+
 	settings, err := Load()
 	if err != nil {
 		return nil, err
@@ -65,7 +67,7 @@ func Initialize() (*Application, error) {
 
 	log.Printf("http: server configured port=%s mode=%s", settings.HTTP.Port, settings.HTTP.GinMode)
 
-	return &Application{
+	app := &Application{
 		Config:       settings,
 		server:       server,
 		mongo:        mongoResources,
@@ -74,7 +76,22 @@ func Initialize() (*Application, error) {
 		services:     services,
 		handlers:     handlers,
 		middlewares:  middlewares,
-	}, nil
+	}
+
+	defer func() {
+		log.Println("shutdown: releasing resources")
+		if closeErr := app.Close(ctx); closeErr != nil {
+			log.Printf("error closing application resources: %v", closeErr)
+		}
+	}()
+
+	log.Println("startup: boot sequence complete, starting HTTP server")
+
+	if err := app.RunHTTPServer(); err != nil {
+		log.Fatal(err)
+	}
+
+	return app, nil
 }
 
 func (a *Application) Close(ctx context.Context) error {
